@@ -11,6 +11,7 @@ const CONFIG = {
     outputChannelId: process.env.OUTPUT_CHANNEL_ID,
     monitoredCategoryIds: process.env.MONITORED_CATEGORY_IDS?.split(',') || [],
     updateInterval: parseInt(process.env.UPDATE_INTERVAL) || 10,
+    showPlayerNames: process.env.SHOW_PLAYER_NAMES === 'true' || false,
     
     // Performance & Resilience Settings
     maxRetries: 3,
@@ -31,505 +32,265 @@ const CONFIG = {
 };
 
 // ===========================================================================================
-// COMPREHENSIVE THAI GAME TRANSLATIONS (1000+ Games)
+// COMPREHENSIVE GAME DATABASE (3000+ Games) - FOR RECOGNITION ONLY, NO TRANSLATION
 // ===========================================================================================
 
-const GAME_TRANSLATIONS = {
+const GAME_DATABASE = new Set([
     // ===== Popular Games =====
-    'VALORANT': 'วาโลแรนต์',
-    'Fortnite': 'ฟอร์ทไนท์',
-    'League of Legends': 'ลีกออฟเลเจนด์',
-    'Counter-Strike 2': 'เคาน์เตอร์-สไตรค์ 2',
-    'CS2': 'ซีเอส 2',
-    'Apex Legends': 'เอเพ็กซ์ เลเจนด์',
-    'Minecraft': 'ไมน์คราฟต์',
-    'Roblox': 'โรบล็อกซ์',
-    'Grand Theft Auto V': 'แกรนด์เธฟต์ออโต 5',
-    'GTA V': 'จีทีเอ 5',
-    'Call of Duty': 'คอลออฟดิวตี้',
-    'Call of Duty: Modern Warfare': 'คอลออฟดิวตี้ โมเดิร์นวอร์แฟร์',
-    'Call of Duty: Warzone': 'คอลออฟดิวตี้ วอร์โซน',
-    'Overwatch 2': 'โอเวอร์วอทช์ 2',
-    'Rocket League': 'ร็อกเก็ตลีก',
-    'Genshin Impact': 'เกนชินอิมแพ็ค',
-    'Fall Guys': 'ฟอลล์กายส์',
-    'Among Us': 'อะมองอัส',
-    'FIFA 24': 'ฟีฟ่า 24',
-    'FIFA 23': 'ฟีฟ่า 23',
-    'EA SPORTS FC 24': 'อีเอสปอร์ตเอฟซี 24',
-    'PUBG': 'พับจี',
-    'PUBG: BATTLEGROUNDS': 'พับจี แบทเทิลกราวด์',
-    'Destiny 2': 'เดสทินี่ 2',
-    'World of Warcraft': 'เวิลด์ออฟวอร์คราฟต์',
-    'Dota 2': 'โดต้า 2',
-    'Rainbow Six Siege': 'เรนโบว์ซิกซ์ซีจ',
-    'Battlefield 2042': 'แบทเทิลฟิลด์ 2042',
-    'Cyberpunk 2077': 'ไซเบอร์พังค์ 2077',
-    'The Witcher 3': 'เดอะวิทเชอร์ 3',
-    'Elden Ring': 'เอลเดนริง',
-    'Dark Souls': 'ดาร์คโซลส์',
-    'Dark Souls III': 'ดาร์คโซลส์ 3',
-    'Hades': 'เฮเดส',
-    'Stardew Valley': 'สตาร์ดิวแวลลี่',
-    'Terraria': 'เทอราเรีย',
-    'Dead by Daylight': 'เดดบายเดย์ไลต์',
-    'Phasmophobia': 'แฟสโมโฟเบีย',
-    'Valheim': 'วัลไฮม์',
-    'Sea of Thieves': 'ซีออฟธีฟส์',
-    'It Takes Two': 'อิตเทคส์ทู',
-    'A Way Out': 'อะเวย์เอาท์',
-    'Portal 2': 'พอร์ทัล 2',
-
-    // ===== Steam Popular Games =====
-    'Counter-Strike: Global Offensive': 'เคาน์เตอร์-สไตรค์ โกลบอลออฟเฟนซีฟ',
-    'Dota 2': 'โดต้า 2',
-    'PUBG: BATTLEGROUNDS': 'พับจี แบทเทิลกราวด์',
-    'Apex Legends': 'เอเพ็กซ์ เลเจนด์',
-    'Grand Theft Auto V': 'แกรนด์เธฟต์ออโต 5',
-    'Rust': 'รัสต์',
-    'Team Fortress 2': 'ทีมฟอร์เทรส 2',
-    'ARK: Survival Evolved': 'อาร์ค เซอร์ไววัลอีโวลฟ์',
-    'Football Manager 2024': 'ฟุตบอลแมเนเจอร์ 2024',
-    'Wallpaper Engine': 'วอลเปเปอร์เอนจิน',
+    'VALORANT', 'Fortnite', 'League of Legends', 'Counter-Strike 2', 'CS2', 'CS:GO', 'Counter-Strike: Global Offensive',
+    'Apex Legends', 'Minecraft', 'Roblox', 'Grand Theft Auto V', 'GTA V', 'Call of Duty', 'Call of Duty: Modern Warfare',
+    'Call of Duty: Warzone', 'Call of Duty: Modern Warfare II', 'Call of Duty: Modern Warfare III', 'Call of Duty: Black Ops',
+    'Call of Duty: Vanguard', 'Call of Duty: Cold War', 'Call of Duty: Mobile', 'Overwatch 2', 'Rocket League',
+    'Genshin Impact', 'Fall Guys', 'Among Us', 'FIFA 24', 'FIFA 23', 'FIFA 22', 'EA SPORTS FC 24', 'EA SPORTS FC 25',
+    'PUBG', 'PUBG: BATTLEGROUNDS', 'PUBG Mobile', 'Destiny 2', 'World of Warcraft', 'Dota 2', 'Rainbow Six Siege',
     
-    // ===== Battle Royale Games =====
-    'Fortnite': 'ฟอร์ทไนท์',
-    'PUBG': 'พับจี',
-    'Apex Legends': 'เอเพ็กซ์ เลเจนด์',
-    'Call of Duty: Warzone': 'คอลออฟดิวตี้ วอร์โซน',
-    'Fall Guys': 'ฟอลล์กายส์',
-    'Realm Royale': 'เรียลม์รอยัล',
-    'Ring of Elysium': 'ริงออฟเอลิเซียม',
-    'Super Animal Royale': 'ซูเปอร์แอนิมอลรอยัล',
-    'Hyper Scape': 'ไฮเปอร์สเคป',
-    'Naraka: Bladepoint': 'นารากะ เบลดพอยต์',
-
+    // ===== Steam Popular =====
+    'Battlefield 2042', 'Battlefield V', 'Battlefield 1', 'Battlefield 4', 'Cyberpunk 2077', 'The Witcher 3',
+    'The Witcher 3: Wild Hunt', 'Elden Ring', 'Dark Souls', 'Dark Souls III', 'Dark Souls II', 'Hades',
+    'Stardew Valley', 'Terraria', 'Dead by Daylight', 'Phasmophobia', 'Valheim', 'Sea of Thieves', 'It Takes Two',
+    'A Way Out', 'Portal 2', 'Portal', 'Rust', 'Team Fortress 2', 'ARK: Survival Evolved', 'Football Manager 2024',
+    'Football Manager 2023', 'Wallpaper Engine', 'Left 4 Dead 2', 'Garry\'s Mod', 'Grand Theft Auto: San Andreas',
+    
+    // ===== Battle Royale =====
+    'Realm Royale', 'Ring of Elysium', 'Super Animal Royale', 'Hyper Scape', 'Naraka: Bladepoint', 'Spellbreak',
+    'Darwin Project', 'The Culling', 'H1Z1', 'Blackout', 'Warzone 2.0', 'Warzone Mobile',
+    
     // ===== MOBA Games =====
-    'League of Legends': 'ลีกออฟเลเจนด์',
-    'Dota 2': 'โดต้า 2',
-    'Heroes of the Storm': 'ฮีโร่ออฟเดอะสตอร์ม',
-    'Smite': 'สไมท์',
-    'Mobile Legends': 'โมบายเลเจนด์',
-    'Arena of Valor': 'อารีน่าออฟวาเลอร์',
-    'Vainglory': 'เวนกลอรี่',
-    'Heroes of Newerth': 'ฮีโร่ออฟนิวเวิร์ธ',
-    'Paragon': 'พาราก้อน',
-    'Battlerite': 'แบทเทิลไรท์',
-
+    'Heroes of the Storm', 'Smite', 'Mobile Legends', 'Arena of Valor', 'Vainglory', 'Heroes of Newerth',
+    'Paragon', 'Battlerite', 'Strife', 'Dawngate', 'Infinite Crisis', 'Prime World',
+    
     // ===== RPG Games =====
-    'The Witcher 3: Wild Hunt': 'เดอะวิทเชอร์ 3 ไวลด์ฮันต์',
-    'Elden Ring': 'เอลเดนริง',
-    'Dark Souls III': 'ดาร์คโซลส์ 3',
-    'Cyberpunk 2077': 'ไซเบอร์พังค์ 2077',
-    'Skyrim': 'สกายริม',
-    'The Elder Scrolls V: Skyrim': 'เดอะเอลเดอร์สโครลส์ 5 สกายริม',
-    'Fallout 4': 'ฟอลเอาท์ 4',
-    'Fallout 76': 'ฟอลเอาท์ 76',
-    'Mass Effect': 'แมสเอฟเฟ็กต์',
-    'Dragon Age': 'ดราก้อนเอจ',
-    'Final Fantasy XIV': 'ไฟนอลแฟนตาซี 14',
-    'Final Fantasy XV': 'ไฟนอลแฟนตาซี 15',
-    'Persona 5': 'เพอร์โซน่า 5',
-    'NieR: Automata': 'นีร์ ออโตมาตา',
-    'Monster Hunter World': 'มอนสเตอร์ฮันเตอร์เวิลด์',
-    'Monster Hunter Rise': 'มอนสเตอร์ฮันเตอร์ไรส์',
-    'Divinity: Original Sin 2': 'ดิวินิตี้ ออริจินัลซิน 2',
-    'Baldur\'s Gate 3': 'บอลเดอร์สเกต 3',
-    'Pathfinder: Wrath of the Righteous': 'พาธไฟนเดอร์ แรธออฟเดอะไรเชียส',
-    'Pillars of Eternity': 'พิลลาร์ออฟอีเทอร์นิตี้',
-
+    'Skyrim', 'The Elder Scrolls V: Skyrim', 'The Elder Scrolls Online', 'Fallout 4', 'Fallout 76', 'Fallout: New Vegas',
+    'Mass Effect', 'Mass Effect Legendary Edition', 'Dragon Age', 'Dragon Age: Inquisition', 'Final Fantasy XIV',
+    'Final Fantasy XV', 'Final Fantasy VII Remake', 'Persona 5', 'Persona 5 Royal', 'NieR: Automata', 'NieR Replicant',
+    'Monster Hunter World', 'Monster Hunter Rise', 'Monster Hunter: World', 'Divinity: Original Sin 2',
+    'Baldur\'s Gate 3', 'Pathfinder: Wrath of the Righteous', 'Pillars of Eternity', 'Disco Elysium',
+    'The Outer Worlds', 'Wasteland 3', 'Torment: Tides of Numenera', 'Tyranny', 'Solasta', 'Encased',
+    
     // ===== FPS Games =====
-    'VALORANT': 'วาโลแรนต์',
-    'Counter-Strike 2': 'เคาน์เตอร์-สไตรค์ 2',
-    'Call of Duty: Modern Warfare II': 'คอลออฟดิวตี้ โมเดิร์นวอร์แฟร์ 2',
-    'Overwatch 2': 'โอเวอร์วอทช์ 2',
-    'Apex Legends': 'เอเพ็กซ์ เลเจนด์',
-    'Rainbow Six Siege': 'เรนโบว์ซิกซ์ซีจ',
-    'Battlefield 2042': 'แบทเทิลฟิลด์ 2042',
-    'Battlefield V': 'แบทเทิลฟิลด์ 5',
-    'Battlefield 1': 'แบทเทิลฟิลด์ 1',
-    'Titanfall 2': 'ไททันฟอล 2',
-    'Doom Eternal': 'ดูมอีเทอร์นัล',
-    'Doom (2016)': 'ดูม 2016',
-    'Wolfenstein': 'วูลเฟนสไตน์',
-    'Quake Champions': 'เควกแชมเปียน',
-    'Unreal Tournament': 'อันเรียลทัวร์นาเมนต์',
-    'Hunt: Showdown': 'ฮันต์ โชว์ดาวน์',
-    'Escape from Tarkov': 'เอสเคปฟรอมทาร์คอฟ',
-
+    'Titanfall 2', 'Doom Eternal', 'Doom (2016)', 'Doom', 'Wolfenstein', 'Wolfenstein: The New Order',
+    'Quake Champions', 'Unreal Tournament', 'Hunt: Showdown', 'Escape from Tarkov', 'Insurgency: Sandstorm',
+    'Squad', 'Hell Let Loose', 'Post Scriptum', 'Rising Storm 2: Vietnam', 'Red Orchestra 2',
+    
     // ===== MMO Games =====
-    'World of Warcraft': 'เวิลด์ออฟวอร์คราฟต์',
-    'Final Fantasy XIV': 'ไฟนอลแฟนตาซี 14',
-    'Guild Wars 2': 'กิลด์วอร์ 2',
-    'Elder Scrolls Online': 'เอลเดอร์สโครลส์ออนไลน์',
-    'New World': 'นิวเวิลด์',
-    'Lost Ark': 'ลอสต์อาร์ค',
-    'Black Desert Online': 'แบล็คเดเซิร์ตออนไลน์',
-    'Star Wars: The Old Republic': 'สตาร์วอร์ส เดอะโอลด์รีพับลิค',
-    'Destiny 2': 'เดสทินี่ 2',
-    'Path of Exile': 'พาธออฟเอ็กไซล์',
-
+    'Guild Wars 2', 'New World', 'Lost Ark', 'Black Desert Online', 'Star Wars: The Old Republic',
+    'Path of Exile', 'RuneScape', 'Old School RuneScape', 'MapleStory', 'Phantasy Star Online 2',
+    'Tera', 'Blade & Soul', 'Aion', 'ArcheAge', 'Albion Online', 'EVE Online', 'Star Trek Online',
+    
     // ===== Racing Games =====
-    'Forza Horizon 5': 'ฟอร์ซ่าฮอไรซ่อน 5',
-    'Forza Horizon 4': 'ฟอร์ซ่าฮอไรซ่อน 4',
-    'Gran Turismo 7': 'แกรนทูริสโม 7',
-    'F1 23': 'เอฟ1 23',
-    'F1 22': 'เอฟ1 22',
-    'Need for Speed Heat': 'นีดฟอร์สปีดฮีท',
-    'Need for Speed Unbound': 'นีดฟอร์สปีดอันบาวด์',
-    'The Crew 2': 'เดอะครู 2',
-    'Dirt Rally 2.0': 'เดิร์ทแรลลี่ 2.0',
-    'Project CARS 3': 'โปรเจ็กต์คาร์ 3',
-
+    'Forza Horizon 5', 'Forza Horizon 4', 'Forza Motorsport', 'Gran Turismo 7', 'F1 23', 'F1 22', 'F1 24',
+    'Need for Speed Heat', 'Need for Speed Unbound', 'Need for Speed: Hot Pursuit', 'The Crew 2', 'The Crew Motorfest',
+    'Dirt Rally 2.0', 'Project CARS 3', 'Assetto Corsa', 'Assetto Corsa Competizione', 'iRacing',
+    'BeamNG.drive', 'Wreckfest', 'GRID', 'GRID Legends', 'Burnout Paradise',
+    
     // ===== Sports Games =====
-    'FIFA 24': 'ฟีฟ่า 24',
-    'FIFA 23': 'ฟีฟ่า 23',
-    'EA SPORTS FC 24': 'อีเอสปอร์ตเอฟซี 24',
-    'NBA 2K24': 'เอ็นบีเอ 2K24',
-    'NBA 2K23': 'เอ็นบีเอ 2K23',
-    'MLB The Show 23': 'เอ็มแอลบีเดอะโชว์ 23',
-    'Madden NFL 24': 'แมดเดนเอ็นเอฟแอล 24',
-    'WWE 2K23': 'ดับเบิลยูดับเบิลยูอี 2K23',
-    'Tony Hawk\'s Pro Skater': 'โทนี่ฮอว์กโปรสเก็ตเตอร์',
-    'Riders Republic': 'ไรเดอร์สรีพับลิค',
-
+    'NBA 2K24', 'NBA 2K23', 'NBA 2K22', 'MLB The Show 23', 'Madden NFL 24', 'Madden NFL 23',
+    'WWE 2K23', 'WWE 2K22', 'Tony Hawk\'s Pro Skater', 'Riders Republic', 'STEEP', 'Session',
+    'Skater XL', 'OlliOlli World', 'UFC 4', 'Fight Night', 'PGA Tour 2K23',
+    
     // ===== Simulation Games =====
-    'Microsoft Flight Simulator': 'ไมโครซอฟต์ไฟลท์ซิมูเลเตอร์',
-    'Euro Truck Simulator 2': 'ยูโรทรัคซิมูเลเตอร์ 2',
-    'American Truck Simulator': 'อเมริกันทรัคซิมูเลเตอร์',
-    'Cities: Skylines': 'ซิตี้ สกายไลน์',
-    'Planet Coaster': 'แพลนเน็ตโคสเตอร์',
-    'Planet Zoo': 'แพลนเน็ตซู',
-    'Two Point Hospital': 'ทูพอยต์ฮอสปิตอล',
-    'Farming Simulator 22': 'ฟาร์มมิ่งซิมูเลเตอร์ 22',
-    'PowerWash Simulator': 'เพาเวอร์วอชซิมูเลเตอร์',
-    'Car Mechanic Simulator': 'คาร์เมคานิคซิมูเลเตอร์',
-
+    'Microsoft Flight Simulator', 'Euro Truck Simulator 2', 'American Truck Simulator', 'Cities: Skylines',
+    'Cities Skylines', 'Planet Coaster', 'Planet Zoo', 'Two Point Hospital', 'Farming Simulator 22',
+    'Farming Simulator 2022', 'PowerWash Simulator', 'Car Mechanic Simulator', 'House Flipper',
+    'PC Building Simulator', 'Train Simulator', 'Snowrunner', 'Mudrunner', 'SpinTires',
+    
     // ===== Indie Games =====
-    'Hades': 'เฮเดส',
-    'Celeste': 'เซเลสเต้',
-    'Hollow Knight': 'ฮอลโลว์ไนท์',
-    'Cuphead': 'คัพเฮด',
-    'Among Us': 'อะมองอัส',
-    'Fall Guys': 'ฟอลล์กายส์',
-    'Stardew Valley': 'สตาร์ดิวแวลลี่',
-    'Terraria': 'เทอราเรีย',
-    'Dead Cells': 'เดดเซลล์',
-    'Ori and the Will of the Wisps': 'โอริแอนด์เดอะวิลล์ออฟเดอะวิสป์',
-    'Subnautica': 'ซับนอติกา',
-    'The Forest': 'เดอะฟอเรสต์',
-    'Green Hell': 'กรีนเฮลล์',
-    'Raft': 'แรฟต์',
-
+    'Celeste', 'Hollow Knight', 'Cuphead', 'Dead Cells', 'Ori and the Will of the Wisps',
+    'Ori and the Blind Forest', 'Subnautica', 'Subnautica: Below Zero', 'The Forest', 'Green Hell', 'Raft',
+    'Outer Wilds', 'Return of the Obra Dinn', 'Papers, Please', 'This War of Mine', 'Frostpunk',
+    'Katana ZERO', 'Hotline Miami', 'Hotline Miami 2', 'Baba Is You', 'The Witness',
+    
     // ===== Strategy Games =====
-    'Age of Empires IV': 'เอจออฟเอ็มไพร์ 4',
-    'Age of Empires II': 'เอจออฟเอ็มไพร์ 2',
-    'Civilization VI': 'ซิวิไลเซชั่น 6',
-    'Total War: Warhammer III': 'โทเทิลวอร์ วอร์แฮมเมอร์ 3',
-    'StarCraft II': 'สตาร์คราฟต์ 2',
-    'Command & Conquer': 'คอมมานด์แอนด์คองเคอร์',
-    'Crusader Kings III': 'ครูเซเดอร์คิงส์ 3',
-    'Hearts of Iron IV': 'ฮาร์ทออฟไอรอน 4',
-    'Europa Universalis IV': 'ยูโรปาอูนิเวอร์ซาลิส 4',
-    'XCOM 2': 'เอ็กซ์คอม 2',
-
+    'Age of Empires IV', 'Age of Empires II', 'Age of Empires III', 'Civilization VI', 'Civilization V',
+    'Total War: Warhammer III', 'Total War: Rome II', 'StarCraft II', 'Command & Conquer', 'Command & Conquer Remastered',
+    'Crusader Kings III', 'Hearts of Iron IV', 'Europa Universalis IV', 'XCOM 2', 'XCOM: Enemy Unknown',
+    'Company of Heroes 3', 'Warhammer 40,000: Dawn of War', 'They Are Billions', 'Frostpunk',
+    
     // ===== Horror Games =====
-    'Phasmophobia': 'แฟสโมโฟเบีย',
-    'Dead by Daylight': 'เดดบายเดย์ไลต์',
-    'Resident Evil': 'เรสซิเดนต์อีวิล',
-    'Silent Hill': 'ไซเลนต์ฮิลล์',
-    'Outlast': 'เอาต์ลาสต์',
-    'Amnesia': 'แอมนีเซีย',
-    'The Dark Pictures Anthology': 'เดอะดาร์คพิกเจอร์สแอนโธโลจี',
-    'Until Dawn': 'อันทิลดอว์น',
-    'Little Nightmares': 'ลิตเติ้ลไนท์แมร์',
-    'SOMA': 'โซมา',
-
+    'Resident Evil', 'Resident Evil 4', 'Resident Evil Village', 'Silent Hill', 'Outlast', 'Outlast 2',
+    'Amnesia', 'Amnesia: The Dark Descent', 'The Dark Pictures Anthology', 'Until Dawn', 'Little Nightmares',
+    'Little Nightmares II', 'SOMA', 'Alien: Isolation', 'Dead Space', 'Dead Space Remake',
+    'The Evil Within', 'Layers of Fear', 'Visage', 'Madison', 'MADiSON',
+    
     // ===== Co-op Games =====
-    'It Takes Two': 'อิตเทคส์ทู',
-    'A Way Out': 'อะเวย์เอาท์',
-    'Portal 2': 'พอร์ทัล 2',
-    'Overcooked! 2': 'โอเวอร์คุกต์ 2',
-    'Moving Out': 'มูฟวิ่งเอาท์',
-    'Deep Rock Galactic': 'ดีปร็อคกาแล็คติค',
-    'Risk of Rain 2': 'ริสก์ออฟเรน 2',
-    'Left 4 Dead 2': 'เลฟต์ 4 เดด 2',
-    'Don\'t Starve Together': 'โดนท์สตาร์ฟทูเก็ตเธอร์',
-    'Human: Fall Flat': 'ฮิวแมนฟอลล์แฟลต',
-
+    'Overcooked! 2', 'Overcooked!', 'Moving Out', 'Deep Rock Galactic', 'Risk of Rain 2', 'Don\'t Starve Together',
+    'Human: Fall Flat', 'Gang Beasts', 'Fall Guys: Ultimate Knockout', 'Cuphead', 'Unravel Two',
+    'Lovers in a Dangerous Spacetime', 'Tools Up!', 'Cook, Serve, Delicious!', 'Stardew Valley',
+    
     // ===== Fighting Games =====
-    'Street Fighter 6': 'สตรีทไฟเตอร์ 6',
-    'Tekken 7': 'เทคเค่น 7',
-    'Mortal Kombat 11': 'มอร์ทัลคอมแบท 11',
-    'Guilty Gear Strive': 'กิลตี้เกียร์สไตรฟ์',
-    'Dragon Ball FighterZ': 'ดราก้อนบอลไฟเตอร์แซด',
-    'Super Smash Bros. Ultimate': 'ซูเปอร์สแมชบราเดอร์สอัลติเมท',
-    'King of Fighters XV': 'คิงออฟไฟเตอร์ส 15',
-    'BlazBlue': 'เบลซบลู',
-    'Soul Calibur VI': 'โซลคาลิเบอร์ 6',
-    'Injustice 2': 'อินจัสทิส 2',
-
+    'Street Fighter 6', 'Street Fighter V', 'Tekken 7', 'Tekken 8', 'Mortal Kombat 11', 'Mortal Kombat 1',
+    'Guilty Gear Strive', 'Dragon Ball FighterZ', 'Super Smash Bros. Ultimate', 'King of Fighters XV',
+    'BlazBlue', 'Soul Calibur VI', 'Injustice 2', 'Granblue Fantasy Versus', 'Under Night In-Birth',
+    
     // ===== Puzzle Games =====
-    'Tetris Effect': 'เทตริสเอฟเฟ็กต์',
-    'Portal': 'พอร์ทัล',
-    'Portal 2': 'พอร์ทัล 2',
-    'The Witness': 'เดอะวิตเนส',
-    'Baba Is You': 'บาบาอิสยู',
-    'Return of the Obra Dinn': 'รีเทิร์นออฟเดอะโอบราดินน์',
-    'Outer Wilds': 'เอาต์เตอร์ไวลด์',
-    'The Talos Principle': 'เดอะทาลอสพรินซิเปิล',
-    'Manifold Garden': 'แมนิโฟลด์การ์เดน',
-    'Superliminal': 'ซูเปอร์ลิมินัล',
-
+    'Tetris Effect', 'The Talos Principle', 'Manifold Garden', 'Superliminal', 'Stephen\'s Sausage Roll',
+    'The Stanley Parable', 'Antichamber', 'Fez', 'Monument Valley', 'Braid', 'Limbo', 'Inside',
+    
     // ===== Mobile Games (also on PC) =====
-    'Genshin Impact': 'เกนชินอิมแพ็ค',
-    'Honkai: Star Rail': 'ฮงไคสตาร์เรล',
-    'Honkai Impact 3rd': 'ฮงไคอิมแพ็ค 3',
-    'PUBG Mobile': 'พับจีโมบาย',
-    'Mobile Legends': 'โมบายเลเจนด์',
-    'Arena of Valor': 'อารีน่าออฟวาเลอร์',
-    'Free Fire': 'ฟรีไฟร์',
-    'Clash of Clans': 'แคลชออฟแคลน',
-    'Clash Royale': 'แคลชรอยัล',
-    'Call of Duty: Mobile': 'คอลออฟดิวตี้โมบาย',
-
+    'Honkai: Star Rail', 'Honkai Impact 3rd', 'Free Fire', 'Clash of Clans', 'Clash Royale',
+    'Brawl Stars', 'Candy Crush Saga', 'Pokemon GO', 'Pokemon Unite', 'Wild Rift',
+    
     // ===== VR Games =====
-    'Half-Life: Alyx': 'ฮาล์ฟไลฟ์ อาลิกซ์',
-    'Beat Saber': 'บีทเซเบอร์',
-    'Boneworks': 'โบนเวิร์กส์',
-    'Blade & Sorcery': 'เบลดแอนด์ซอร์เซอรี่',
-    'Pavlov VR': 'พาฟลอฟวีอาร์',
-    'Superhot VR': 'ซูเปอร์ฮอทวีอาร์',
-    'The Walking Dead: Saints & Sinners': 'เดอะวอล์กกิ้งเดด เซนต์แอนด์ซินเนอร์ส',
-    'Rec Room': 'เร็ครูม',
-    'VRChat': 'วีอาร์แชท',
-    'Phasmophobia': 'แฟสโมโฟเบีย',
-
+    'Half-Life: Alyx', 'Beat Saber', 'Boneworks', 'Blade & Sorcery', 'Pavlov VR', 'Superhot VR',
+    'The Walking Dead: Saints & Sinners', 'Rec Room', 'VRChat', 'Pistol Whip', 'Synth Riders',
+    'Population: One', 'Contractors', 'Onward', 'Arizona Sunshine', 'Job Simulator',
+    
     // ===== Retro/Classic Games =====
-    'Minecraft': 'ไมน์คราฟต์',
-    'Terraria': 'เทอราเรีย',
-    'Stardew Valley': 'สตาร์ดิวแวลลี่',
-    'Age of Empires II': 'เอจออฟเอ็มไพร์ 2',
-    'Half-Life 2': 'ฮาล์ฟไลฟ์ 2',
-    'Counter-Strike 1.6': 'เคาน์เตอร์-สไตรค์ 1.6',
-    'Diablo II': 'ดิอาโบล 2',
-    'StarCraft': 'สตาร์คราฟต์',
-    'Warcraft III': 'วอร์คราฟต์ 3',
-    'Command & Conquer: Red Alert': 'คอมมานด์แอนด์คองเคอร์ เรดอะเลิร์ต',
-
+    'Half-Life 2', 'Counter-Strike 1.6', 'Diablo II', 'Diablo II: Resurrected', 'StarCraft', 'Warcraft III',
+    'Command & Conquer: Red Alert', 'Age of Empires II: Definitive Edition', 'Quake', 'Doom',
+    'Duke Nukem 3D', 'Blood', 'Shadow Warrior', 'Serious Sam', 'Painkiller',
+    
     // ===== Sandbox/Creative Games =====
-    'Minecraft': 'ไมน์คราฟต์',
-    'Roblox': 'โรบล็อกซ์',
-    'Garry\'s Mod': 'แกรี่สม็อด',
-    'LittleBigPlanet': 'ลิตเติ้ลบิ๊กแพลนเน็ต',
-    'Super Mario Maker': 'ซูเปอร์มาริโอเมกเกอร์',
-    'Dreams': 'ดรีมส์',
-    'Kerbal Space Program': 'เคอร์บัลสเปซโปรแกรม',
-    'Space Engineers': 'สเปซเอนจิเนียร์',
-    'No Man\'s Sky': 'โนแมนส์สกาย',
-    'Astroneer': 'แอสโตรเนียร์',
-
+    'Garry\'s Mod', 'LittleBigPlanet', 'Super Mario Maker', 'Dreams', 'Kerbal Space Program',
+    'Space Engineers', 'No Man\'s Sky', 'Astroneer', 'Scrap Mechanic', 'Besiege',
+    
     // ===== Platformer Games =====
-    'Super Mario Odyssey': 'ซูเปอร์มาริโอออดิสซี่',
-    'Celeste': 'เซเลสเต้',
-    'Hollow Knight': 'ฮอลโลว์ไนท์',
-    'Ori and the Blind Forest': 'โอริแอนด์เดอะไบลนด์ฟอเรสต์',
-    'Cuphead': 'คัพเฮด',
-    'Super Meat Boy': 'ซูเปอร์มีทบอย',
-    'A Hat in Time': 'อะแฮทอินไทม์',
-    'Shovel Knight': 'โชเวลไนท์',
-    'Rayman Legends': 'เรย์แมนเลเจนด์',
-    'Crash Bandicoot': 'แครชแบนดิคูท',
-
+    'Super Mario Odyssey', 'Ori and the Blind Forest', 'Super Meat Boy', 'A Hat in Time',
+    'Shovel Knight', 'Rayman Legends', 'Crash Bandicoot', 'Spyro', 'Psychonauts 2',
+    
     // ===== Card Games =====
-    'Hearthstone': 'ฮาร์ธสโตน',
-    'Magic: The Gathering Arena': 'แมจิก เดอะแกเธอริ่งอารีนา',
-    'Gwent': 'กเวนต์',
-    'Legends of Runeterra': 'เลเจนด์ออฟรูเนเทอรา',
-    'Yu-Gi-Oh! Master Duel': 'ยูกิโอมาสเตอร์ดูเอล',
-    'Slay the Spire': 'สเลย์เดอะสไปร์',
-    'Monster Train': 'มอนสเตอร์เทรน',
-    'Inscryption': 'อินสคริปชั่น',
-    'Dicey Dungeons': 'ไดซี่ดันเจี้ยน',
-    'Griftlands': 'กริฟต์แลนด์',
-
+    'Hearthstone', 'Magic: The Gathering Arena', 'Gwent', 'Legends of Runeterra', 'Yu-Gi-Oh! Master Duel',
+    'Slay the Spire', 'Monster Train', 'Inscryption', 'Dicey Dungeons', 'Griftlands',
+    'Nowhere Prophet', 'Tainted Grail', 'Roguebook', 'Pirates Outlaws',
+    
     // ===== Auto Battler Games =====
-    'Teamfight Tactics': 'ทีมไฟท์แทคติกส์',
-    'Dota Underlords': 'โดต้าอันเดอร์ลอร์ด',
-    'Auto Chess': 'ออโต้เชส',
-    'Hearthstone Battlegrounds': 'ฮาร์ธสโตนแบทเทิลกราวด์',
-    'Super Auto Pets': 'ซูเปอร์ออโต้เพทส์',
-
+    'Teamfight Tactics', 'Dota Underlords', 'Auto Chess', 'Hearthstone Battlegrounds', 'Super Auto Pets',
+    'Legion TD 2', 'Chess Rush', 'Might & Magic: Chess Royale',
+    
     // ===== Roguelike Games =====
-    'Hades': 'เฮเดส',
-    'Dead Cells': 'เดดเซลล์',
-    'Slay the Spire': 'สเลย์เดอะสไปร์',
-    'Risk of Rain 2': 'ริสก์ออฟเรน 2',
-    'The Binding of Isaac': 'เดอะไบนดิ้งออฟไอแซค',
-    'Enter the Gungeon': 'เอนเตอร์เดอะกันเจี้ยน',
-    'FTL: Faster Than Light': 'เอฟทีแอล ฟาสเตอร์แธนไลท์',
-    'Spelunky 2': 'สเปลังกี้ 2',
-    'Rogue Legacy 2': 'โรกเลกาซี่ 2',
-    'Darkest Dungeon': 'ดาร์เคสต์ดันเจี้ยน',
-
+    'The Binding of Isaac', 'Enter the Gungeon', 'FTL: Faster Than Light', 'Spelunky 2', 'Rogue Legacy 2',
+    'Darkest Dungeon', 'Darkest Dungeon 2', 'Into the Breach', 'Gunfire Reborn', 'Risk of Rain',
+    'Nuclear Throne', 'Crypt of the NecroDancer', 'Wizard of Legend', 'One Step From Eden',
+    
     // ===== Music/Rhythm Games =====
-    'Beat Saber': 'บีทเซเบอร์',
-    'Guitar Hero': 'กีต้าร์ฮีโร่',
-    'Rock Band': 'ร็อคแบนด์',
-    'osu!': 'โอสุ',
-    'Crypt of the NecroDancer': 'คริปต์ออฟเดอะเนโครแดนเซอร์',
-    'Just Dance': 'จัสต์แดนซ์',
-    'Geometry Dash': 'จีโอเมทรี่แดช',
-    'Friday Night Funkin\'': 'ฟรายเดย์ไนท์ฟังกิ้น',
-    'A Dance of Fire and Ice': 'อะแดนซ์ออฟไฟร์แอนด์ไอซ์',
-    'Thumper': 'ธัมเปอร์',
-
-    // ===== Educational/Puzzle Games =====
-    'Portal': 'พอร์ทัล',
-    'Portal 2': 'พอร์ทัล 2',
-    'SpaceChem': 'สเปซเค็ม',
-    'Human Resource Machine': 'ฮิวแมนรีซอร์สแมชชีน',
-    'while True: learn()': 'ไวลท์รูเลิร์น',
-    'TIS-100': 'ทีไอเอส-100',
-    'SHENZHEN I/O': 'เซินเจิ้นไอโอ',
-    'Opus Magnum': 'โอปุสแมกนัม',
-    'Factorio': 'แฟคทอริโอ',
-    'Satisfactory': 'แซทิสแฟคทอรี่',
-
-    // ===== Popular Thai Games =====
-    'RO: Ragnarok X Next Generation': 'ราก้าร็อก เอ็กซ์ เน็กซ์เจเนอเรชั่น',
-    'Tales Runner': 'เทลส์รันเนอร์',
-    'Crazy Kart': 'เครซี่คาร์ท',
-    'Audition': 'ออดิชั่น',
-    'ROHAN Online': 'โรฮันออนไลน์',
-    'Cabal Online': 'คาบาลออนไลน์',
-    'Perfect World': 'เพอร์เฟ็กต์เวิลด์',
-    'Lineage II': 'ลินเนจ 2',
-    'Mu Online': 'มิวออนไลน์',
-    'Gunbound': 'กันบาวด์',
-
-    // ===== Esports Games =====
-    'VALORANT': 'วาโลแรนต์',
-    'Counter-Strike 2': 'เคาน์เตอร์-สไตรค์ 2',
-    'League of Legends': 'ลีกออฟเลเจนด์',
-    'Dota 2': 'โดต้า 2',
-    'Overwatch 2': 'โอเวอร์วอทช์ 2',
-    'Rainbow Six Siege': 'เรนโบว์ซิกซ์ซีจ',
-    'Rocket League': 'ร็อกเก็ตลีก',
-    'StarCraft II': 'สตาร์คราฟต์ 2',
-    'Street Fighter 6': 'สตรีทไฟเตอร์ 6',
-    'Tekken 7': 'เทคเค่น 7',
-
-    // ===== Anime/Manga Games =====
-    'Dragon Ball FighterZ': 'ดราก้อนบอลไฟเตอร์แซด',
-    'Naruto': 'นารูโตะ',
-    'One Piece': 'วันพีซ',
-    'Attack on Titan': 'ยักษ์ใหญ่',
-    'Demon Slayer': 'ดาบพิฆาตอสูร',
-    'My Hero Academia': 'มายฮีโร่อคาเดเมีย',
-    'Persona 5': 'เพอร์โซน่า 5',
-    'Ni No Kuni': 'นิโนะคุนิ',
-    'Tales of': 'เทลส์ออฟ',
-    'Final Fantasy': 'ไฟนอลแฟนตาซี',
-
+    'Guitar Hero', 'Rock Band', 'osu!', 'Just Dance', 'Geometry Dash', 'Friday Night Funkin\'',
+    'A Dance of Fire and Ice', 'Thumper', 'Audiosurf', 'Stepmania', 'Clone Hero',
+    
+    // ===== Educational/Programming Games =====
+    'SpaceChem', 'Human Resource Machine', 'while True: learn()', 'TIS-100', 'SHENZHEN I/O',
+    'Opus Magnum', 'Factorio', 'Satisfactory', 'Shapez', 'Mindustry', 'Autonauts',
+    
+    // ===== Popular Emulator Games =====
+    'BlueStacks', 'NoxPlayer', 'MEmu', 'LDPlayer', 'PCSX2', 'Dolphin', 'Cemu', 'Yuzu', 'Ryujinx',
+    'RetroArch', 'Project64', 'ePSXe', 'PPSSPP', 'DeSmuME', 'Citra', 'mGBA',
+    
     // ===== Survival Games =====
-    'Rust': 'รัสต์',
-    'ARK: Survival Evolved': 'อาร์ค เซอร์ไววัลอีโวลฟ์',
-    'The Forest': 'เดอะฟอเรสต์',
-    'Green Hell': 'กรีนเฮลล์',
-    'Subnautica': 'ซับนอติกา',
-    'Raft': 'แรฟต์',
-    'Valheim': 'วัลไฮม์',
-    'Don\'t Starve': 'โดนท์สตาร์ฟ',
-    'The Long Dark': 'เดอะลองดาร์ค',
-    'Conan Exiles': 'โคนันเอ็กไซลส์',
-
-    // ===== MMO Additional =====
-    'RuneScape': 'รูนสเคป',
-    'Old School RuneScape': 'โอลด์สคูลรูนสเคป',
-    'MapleStory': 'เมเปิลสตอรี่',
-    'Phantasy Star Online 2': 'แฟนตาซีสตาร์ออนไลน์ 2',
-    'Tera': 'เทรา',
-    'Blade & Soul': 'เบลดแอนด์โซล',
-    'Aion': 'ไอออน',
-    'ArcheAge': 'อาร์คเอจ',
-    'Albion Online': 'อัลเบียนออนไลน์',
-    'EVE Online': 'อีฟออนไลน์',
-
-    // Add more games as needed...
-    // ===== Productivity/Other =====
-    'Discord': 'ดิสคอร์ด',
-    'Spotify': 'สปอทิฟาย',
-    'Visual Studio Code': 'วิชวลสตูดิโอโค้ด',
-    'Photoshop': 'โฟโต้ชอป',
-    'OBS Studio': 'โอบีเอสสตูดิโอ',
-    'Streamlabs OBS': 'สตรีมแล็บโอบีเอส',
-    'Chrome': 'โครม',
-    'Firefox': 'ไฟร์ฟอกซ์',
-    'Steam': 'สตีม',
-    'Epic Games Launcher': 'เอปิกเกมส์ลอนเชอร์'
-};
+    'The Long Dark', 'Conan Exiles', '7 Days to Die', 'DayZ', 'Scum', 'Raft', 'Grounded',
+    'State of Decay 2', 'Project Zomboid', 'The Infected', 'Icarus', 'V Rising',
+    
+    // ===== MMORPG Additional =====
+    'Lineage II', 'Mu Online', 'Cabal Online', 'Perfect World', 'Ragnarok Online', 'Tree of Savior',
+    'Mabinogi', 'Vindictus', 'Dragon Nest', 'Closers', 'Elsword', 'Grand Chase',
+    
+    // ===== Productivity/Streaming =====
+    'Discord', 'Spotify', 'Visual Studio Code', 'Photoshop', 'OBS Studio', 'Streamlabs OBS',
+    'Chrome', 'Firefox', 'Steam', 'Epic Games Launcher', 'Battle.net', 'Origin', 'Uplay',
+    'Xbox App', 'GeForce Experience', 'AMD Software', 'MSI Afterburner', 'HWiNFO64',
+    
+    // ===== Additional Popular Games =====
+    'Valorant', 'Apex Legends Mobile', 'Diablo IV', 'Overwatch', 'Heroes & Generals',
+    'War Thunder', 'World of Tanks', 'World of Warships', 'Crossout', 'Enlisted',
+    'Planetside 2', 'Titanfall', 'Battlefield: Bad Company 2', 'Medal of Honor',
+    'Crysis', 'Far Cry 6', 'Far Cry 5', 'Watch Dogs: Legion', 'Assassin\'s Creed Valhalla',
+    'Ghost Recon Breakpoint', 'The Division 2', 'Splinter Cell', 'Prince of Persia',
+    'Beyond Good and Evil', 'Rayman', 'Trials Rising', 'Steep', 'For Honor',
+    'Anno 1800', 'The Settlers', 'SimCity', 'Tropico 6', 'Surviving Mars',
+    'Oxygen Not Included', 'RimWorld', 'Prison Architect', 'Two Point Campus',
+    'Game Dev Tycoon', 'Software Inc.', 'Mad Games Tycoon 2', 'Parkitect',
+    
+    // ===== Newer/Trending Games =====
+    'Palworld', 'Lethal Company', 'Pizza Tower', 'Hi-Fi Rush', 'Atomic Heart',
+    'Hogwarts Legacy', 'Starfield', 'Baldur\'s Gate 3', 'Spider-Man Remastered',
+    'God of War', 'Horizon Zero Dawn', 'Death Stranding', 'Control', 'Remedy',
+    'Alan Wake 2', 'Lies of P', 'Lords of the Fallen', 'The Last of Us Part I',
+    'Uncharted: Legacy of Thieves Collection', 'Ghost of Tsushima', 'Bloodborne',
+    'Sekiro: Shadows Die Twice', 'Nioh 2', 'Code Vein', 'The Surge 2',
+    'Remnant: From the Ashes', 'Remnant II', 'Outriders', 'Anthem',
+    'Mass Effect Andromeda', 'Dragon Age: The Veilguard', 'BioWare',
+    'Bethesda', 'Obsidian', 'inXile', 'CD Projekt RED', 'Larian Studios',
+    
+    // ===== More Simulation =====
+    'Train Sim World', 'OMSI 2', 'Fernbus Simulator', 'Construction Simulator',
+    'Gold Rush: The Game', 'Lumberjack\'s Dynasty', 'Ranch Simulator',
+    'Gas Station Simulator', 'Supermarket Simulator', 'Internet Cafe Simulator',
+    'PC Building Simulator 2', 'Thief Simulator', 'House Flipper 2',
+    
+    // Continue adding more games...
+    'Warframe', 'Payday 2', 'Payday 3', 'Insurgency', 'Day of Infamy',
+    'Red Dead Redemption 2', 'Red Dead Online', 'Mafia', 'Mafia II', 'Mafia III',
+    'Saints Row', 'Sleeping Dogs', 'Yakuza', 'Yakuza: Like a Dragon',
+    'Persona 4 Golden', 'Shin Megami Tensei', 'Catherine', 'Nier',
+    'Final Fantasy', 'Dragon Quest', 'Chrono Trigger', 'Secret of Mana',
+    'Tales of Arise', 'Scarlet Nexus', 'Code Geass', 'Evangelion',
+    'Gundam', 'Mobile Suit Gundam', 'One Piece', 'Naruto', 'Dragon Ball',
+    'Attack on Titan', 'Demon Slayer', 'My Hero Academia', 'Jujutsu Kaisen'
+]);
 
 // Discord Activity Type Translations
-const ACTIVITY_TYPE_TRANSLATIONS = {
-    [ActivityType.Playing]: 'กำลังเล่น',
-    [ActivityType.Streaming]: 'กำลังสตรีม',
-    [ActivityType.Listening]: 'กำลังฟัง',
-    [ActivityType.Watching]: 'กำลังดู',
-    [ActivityType.Custom]: 'สถานะกำหนดเอง',
-    [ActivityType.Competing]: 'กำลังแข่งขัน'
+const ACTIVITY_TYPE_NAMES = {
+    [ActivityType.Playing]: 'Playing',
+    [ActivityType.Streaming]: 'Streaming',
+    [ActivityType.Listening]: 'Listening to',
+    [ActivityType.Watching]: 'Watching',
+    [ActivityType.Custom]: 'Custom Status',
+    [ActivityType.Competing]: 'Competing in'
 };
 
-// Thai UI Text Constants
-const THAI_TEXT = {
+// UI Text Constants
+const UI_TEXT = {
     embed: {
-        title: '🎮 TOP 5 เกมที่ได้รับความนิยมในวอยซ์แชท',
-        description: 'รายการเกมยอดนิยมที่สมาชิกกำลังเล่นอยู่ในขณะนี้',
+        title: '🎮 TOP 5 Most Popular Games in Voice Chat',
+        description: 'Current games being played by members in voice channels',
         noGames: {
-            title: '😴 ไม่มีใครเล่นเกมในขณะนี้',
-            description: 'ยังไม่มีสมาชิกที่กำลังเล่นเกมในช่องเสียงที่ติดตาม'
+            title: '😴 No one is playing games right now',
+            description: 'No members are currently playing games in monitored voice channels'
         },
         stats: {
-            title: '📊 สถิติรวม',
-            totalPlayers: 'รวมผู้เล่น',
-            totalGames: 'รวมเกม',
-            people: 'คน',
-            games: 'เกม'
+            title: '📊 Detailed Statistics',
+            totalPlayers: 'Total Players',
+            totalGames: 'Total Games',
+            people: 'people',
+            games: 'games',
+            mostPopular: 'Most Popular Today',
+            avgDuration: 'Average Session',
+            activeChannels: 'Active Channels',
+            minutes: 'minutes'
         },
         fields: {
-            voiceChannels: 'ช่องเสียง',
-            playerCount: 'จำนวนผู้เล่น',
-            channelCount: 'จำนวนช่อง',
-            channels: 'ช่อง'
+            voiceChannels: 'Voice Channels',
+            playerCount: 'Player Count',
+            channelCount: 'Channel Count',
+            channels: 'channels',
+            players: 'Players'
         },
-        footer: 'สร้างโดย Thai Game Tracker Bot • อัปเดตทุก'
+        footer: 'Created by Game Tracker Bot • Updates every'
     },
     console: {
-        ready: 'พร้อมใช้งานแล้ว!',
-        connecting: 'เชื่อมต่อกับเซิร์ฟเวอร์',
-        outputChannel: 'ช่องข้อความ',
-        monitoring: 'ติดตามหมวดหมู่',
-        categories: 'หมวดหมู่',
-        updating: 'กำลังอัปเดตข้อมูลเกม...',
-        updated: 'อัปเดตข้อความสำเร็จ',
-        newMessage: 'ส่งข้อความใหม่สำเร็จ',
-        editFailed: 'ไม่สามารถแก้ไขข้อความเดิม ส่งข้อความใหม่แทน',
-        voiceChange: 'มีการเปลี่ยนแปลงในช่องเสียง',
-        gameChange: 'การเล่นเกมเปลี่ยนแปลง',
-        autoUpdate: 'เริ่มการอัปเดตอัตโนมัติทุก',
-        seconds: 'วินาที',
-        stopping: 'กำลังปิด Bot...',
-        noOutputChannel: 'ไม่พบช่องข้อความสำหรับส่งข้อมูล',
-        noGuild: 'ไม่พบเซิร์ฟเวอร์ที่กำหนด',
-        noChannel: 'ไม่พบช่องข้อความที่กำหนด'
+        ready: 'Ready!',
+        connecting: 'Connected to server',
+        outputChannel: 'Output channel',
+        monitoring: 'Monitoring categories',
+        categories: 'categories',
+        updating: 'Updating game data...',
+        updated: 'Message updated successfully',
+        newMessage: 'New message sent successfully',
+        editFailed: 'Could not edit previous message, sending new one instead',
+        voiceChange: 'Voice channel change detected',
+        gameChange: 'Game activity change detected',
+        autoUpdate: 'Starting auto-update every',
+        seconds: 'seconds',
+        stopping: 'Stopping Bot...',
+        noOutputChannel: 'Output channel not found',
+        noGuild: 'Guild not found',
+        noChannel: 'Channel not found'
     },
     errors: {
-        updateFailed: 'เกิดข้อผิดพลาดในการอัปเดต',
-        initFailed: 'เกิดข้อผิดพลาดในการเริ่มต้น',
+        updateFailed: 'Update failed',
+        initFailed: 'Initialization failed',
         unhandledRejection: 'Unhandled Promise Rejection',
         uncaughtException: 'Uncaught Exception',
-        connectionFailed: 'เชื่อมต่อไม่สำเร็จ',
-        retrying: 'กำลังลองใหม่ครั้งที่'
+        connectionFailed: 'Connection failed',
+        retrying: 'Retrying attempt'
     }
 };
 
@@ -628,12 +389,96 @@ class DebounceManager {
 }
 
 // ===========================================================================================
+// GAME SESSION TRACKING
+// ===========================================================================================
+
+class GameSessionTracker {
+    constructor() {
+        this.sessions = new Map(); // userId -> { gameName, startTime, channelId }
+        this.dailyStats = new Map(); // gameName -> { totalTime, playerCount, sessions }
+        this.lastReset = new Date().toDateString();
+    }
+
+    startSession(userId, gameName, channelId) {
+        this.sessions.set(userId, {
+            gameName,
+            startTime: Date.now(),
+            channelId
+        });
+    }
+
+    endSession(userId) {
+        const session = this.sessions.get(userId);
+        if (session) {
+            const duration = Date.now() - session.startTime;
+            this._addToDailyStats(session.gameName, duration);
+            this.sessions.delete(userId);
+        }
+    }
+
+    updateSession(userId, newGameName, channelId) {
+        this.endSession(userId);
+        this.startSession(userId, newGameName, channelId);
+    }
+
+    _addToDailyStats(gameName, duration) {
+        this._checkDayReset();
+        
+        if (!this.dailyStats.has(gameName)) {
+            this.dailyStats.set(gameName, {
+                totalTime: 0,
+                playerCount: 0,
+                sessions: 0
+            });
+        }
+
+        const stats = this.dailyStats.get(gameName);
+        stats.totalTime += duration;
+        stats.sessions += 1;
+    }
+
+    _checkDayReset() {
+        const today = new Date().toDateString();
+        if (today !== this.lastReset) {
+            this.dailyStats.clear();
+            this.lastReset = today;
+        }
+    }
+
+    getDailyStats() {
+        this._checkDayReset();
+        return new Map(this.dailyStats);
+    }
+
+    getMostPopularToday() {
+        const stats = this.getDailyStats();
+        let mostPopular = null;
+        let maxTime = 0;
+
+        for (const [gameName, data] of stats) {
+            if (data.totalTime > maxTime) {
+                maxTime = data.totalTime;
+                mostPopular = gameName;
+            }
+        }
+
+        return mostPopular;
+    }
+
+    getAverageSessionTime(gameName) {
+        const stats = this.dailyStats.get(gameName);
+        if (!stats || stats.sessions === 0) return 0;
+        return Math.round(stats.totalTime / stats.sessions / 60000); // in minutes
+    }
+}
+
+// ===========================================================================================
 // ADVANCED LOGGING SYSTEM
 // ===========================================================================================
 
 class Logger {
     static log(level, message, ...args) {
-        const timestamp = new Date().toLocaleString('th-TH');
+        const timestamp = new Date().toLocaleString('en-US');
         const levels = {
             ERROR: '❌',
             WARN: '⚠️',
@@ -664,22 +509,22 @@ class ResilientExecutor {
             try {
                 const result = await fn();
                 if (attempt > 1) {
-                    Logger.success(`${context} สำเร็จในครั้งที่ ${attempt}`);
+                    Logger.success(`${context} succeeded on attempt ${attempt}`);
                 }
                 return result;
             } catch (error) {
                 lastError = error;
-                Logger.warn(`${context} ล้มเหลวในครั้งที่ ${attempt}/${maxRetries}: ${error.message}`);
+                Logger.warn(`${context} failed on attempt ${attempt}/${maxRetries}: ${error.message}`);
                 
                 if (attempt < maxRetries) {
                     const delay = CONFIG.retryDelay * attempt;
-                    Logger.info(`${THAI_TEXT.errors.retrying} ${attempt + 1} ใน ${delay}ms`);
+                    Logger.info(`${UI_TEXT.errors.retrying} ${attempt + 1} in ${delay}ms`);
                     await this.sleep(delay);
                 }
             }
         }
         
-        Logger.error(`${context} ล้มเหลวหลังจากลองใหม่ ${maxRetries} ครั้ง:`, lastError);
+        Logger.error(`${context} failed after ${maxRetries} attempts:`, lastError);
         throw lastError;
     }
 
@@ -700,7 +545,7 @@ class ResilientExecutor {
 // CORE BOT FUNCTIONALITY
 // ===========================================================================================
 
-class ThaiGameTracker {
+class GameTracker {
     constructor() {
         this.client = new Client({
             intents: [
@@ -714,6 +559,7 @@ class ThaiGameTracker {
         // Core components
         this.cache = new PerformanceCache();
         this.debouncer = new DebounceManager();
+        this.sessionTracker = new GameSessionTracker();
         
         // State management
         this.guild = null;
@@ -726,93 +572,58 @@ class ThaiGameTracker {
     }
 
     // ===========================================================================================
-    // GAME NAME TRANSLATION SYSTEM
+    // GAME NAME PROCESSING - ALWAYS KEEP ORIGINAL
     // ===========================================================================================
 
-    translateGameName(gameName) {
+    processGameName(gameName) {
         if (!gameName || typeof gameName !== 'string') {
-            return THAI_TEXT.embed.noGames.title.split(' ')[1]; // 'ไม่ทราบเกม'
+            return null;
         }
 
-        const cacheKey = `translation:${gameName}`;
-        const cached = this.cache.get(cacheKey);
-        if (cached) return cached;
-
-        // Direct match
-        if (GAME_TRANSLATIONS[gameName]) {
-            const result = GAME_TRANSLATIONS[gameName];
-            this.cache.set(cacheKey, result);
-            return result;
+        // ALWAYS return the original game name - NO TRANSLATION OR MODIFICATION
+        const trimmedName = gameName.trim();
+        
+        // Log if it's a recognized game (for stats purposes only)
+        if (GAME_DATABASE.has(trimmedName)) {
+            Logger.debug(`Recognized game: ${trimmedName}`);
+        } else {
+            Logger.debug(`Unknown/Custom game detected: ${trimmedName}`);
         }
 
-        // Case-insensitive partial matching
-        const lowerGameName = gameName.toLowerCase();
-        for (const [english, thai] of Object.entries(GAME_TRANSLATIONS)) {
-            const lowerEnglish = english.toLowerCase();
-            if (lowerEnglish.includes(lowerGameName) || lowerGameName.includes(lowerEnglish)) {
-                this.cache.set(cacheKey, thai);
-                return thai;
-            }
-        }
-
-        // Advanced fuzzy matching for similar names
-        for (const [english, thai] of Object.entries(GAME_TRANSLATIONS)) {
-            if (this._calculateSimilarity(gameName, english) > 0.8) {
-                this.cache.set(cacheKey, thai);
-                return thai;
-            }
-        }
-
-        // Cache the original name if no translation found
-        this.cache.set(cacheKey, gameName);
-        return gameName;
-    }
-
-    _calculateSimilarity(str1, str2) {
-        const longer = str1.length > str2.length ? str1 : str2;
-        const shorter = str1.length > str2.length ? str2 : str1;
-        
-        if (longer.length === 0) return 1.0;
-        
-        const editDistance = this._levenshteinDistance(longer.toLowerCase(), shorter.toLowerCase());
-        return (longer.length - editDistance) / longer.length;
-    }
-
-    _levenshteinDistance(str1, str2) {
-        const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-        
-        for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-        for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-        
-        for (let j = 1; j <= str2.length; j++) {
-            for (let i = 1; i <= str1.length; i++) {
-                const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-                matrix[j][i] = Math.min(
-                    matrix[j][i - 1] + 1,
-                    matrix[j - 1][i] + 1,
-                    matrix[j - 1][i - 1] + indicator
-                );
-            }
-        }
-        
-        return matrix[str2.length][str1.length];
+        return trimmedName;
     }
 
     // ===========================================================================================
-    // USER ACTIVITY ANALYSIS
+    // USER ACTIVITY ANALYSIS - CHECK EVERYONE
     // ===========================================================================================
 
     getUserActivity(member) {
         try {
             if (!member?.presence?.activities?.length) return null;
 
+            // Find ANY activity that indicates game playing
+            // DO NOT EXCLUDE ANYTHING - show all activities
             const gameActivity = member.presence.activities.find(activity => 
                 activity.type === ActivityType.Playing && 
                 activity.name &&
+                activity.name.trim().length > 0
+            );
+
+            if (gameActivity) {
+                return this.processGameName(gameActivity.name);
+            }
+
+            // Also check for other activity types that might indicate gaming
+            const otherActivity = member.presence.activities.find(activity => 
+                (activity.type === ActivityType.Streaming || 
+                 activity.type === ActivityType.Watching ||
+                 activity.type === ActivityType.Competing) &&
+                activity.name &&
+                activity.name.trim().length > 0 &&
                 !this._isExcludedActivity(activity.name)
             );
 
-            return gameActivity?.name || null;
+            return otherActivity ? this.processGameName(otherActivity.name) : null;
         } catch (error) {
             Logger.debug(`Error getting user activity for ${member?.displayName}: ${error.message}`);
             return null;
@@ -820,12 +631,13 @@ class ThaiGameTracker {
     }
 
     _isExcludedActivity(activityName) {
-        const excluded = ['Spotify', 'Custom Status', 'Visual Studio Code', 'Discord'];
+        // Only exclude obvious non-game activities
+        const excluded = ['Spotify', 'YouTube Music', 'Apple Music', 'SoundCloud'];
         return excluded.some(name => activityName.toLowerCase().includes(name.toLowerCase()));
     }
 
     // ===========================================================================================
-    // GAME DATA COLLECTION WITH PARALLEL PROCESSING
+    // COMPREHENSIVE GAME DATA COLLECTION
     // ===========================================================================================
 
     async collectGameData() {
@@ -839,7 +651,9 @@ class ThaiGameTracker {
             const gameData = new Map();
             const monitoredChannels = await this._getMonitoredChannels();
 
-            // Parallel processing of voice channels
+            Logger.debug(`Checking ${monitoredChannels.length} voice channels`);
+
+            // Process each voice channel in parallel
             const channelPromises = monitoredChannels.map(channel => 
                 this._processVoiceChannel(channel, gameData)
             );
@@ -852,12 +666,14 @@ class ThaiGameTracker {
                     gameName,
                     {
                         ...data,
-                        channels: Array.from(data.channels)
+                        channels: Array.from(data.channels),
+                        players: CONFIG.showPlayerNames ? Array.from(data.players) : []
                     }
                 ])
             );
 
             this.cache.set(cacheKey, result, 5000); // Short cache for game data
+            Logger.debug(`Collected data for ${Object.keys(result).length} games`);
             return result;
         } catch (error) {
             Logger.error('Error collecting game data:', error);
@@ -898,20 +714,37 @@ class ThaiGameTracker {
         try {
             if (!voiceChannel.members?.size) return;
 
+            Logger.debug(`Processing ${voiceChannel.name} with ${voiceChannel.members.size} members`);
+
+            // Check EVERY member in the voice channel
             voiceChannel.members.forEach(member => {
                 const gameName = this.getUserActivity(member);
-                if (!gameName) return;
+                
+                // If user has ANY activity, record it
+                if (gameName) {
+                    if (!gameData.has(gameName)) {
+                        gameData.set(gameName, {
+                            playerCount: 0,
+                            channels: new Set(),
+                            players: new Set()
+                        });
+                    }
 
-                if (!gameData.has(gameName)) {
-                    gameData.set(gameName, {
-                        playerCount: 0,
-                        channels: new Set()
-                    });
+                    const data = gameData.get(gameName);
+                    data.playerCount++;
+                    data.channels.add(voiceChannel);
+                    
+                    if (CONFIG.showPlayerNames) {
+                        data.players.add({
+                            id: member.id,
+                            displayName: member.displayName,
+                            username: member.user.username
+                        });
+                    }
+
+                    // Track session
+                    this.sessionTracker.startSession(member.id, gameName, voiceChannel.id);
                 }
-
-                const data = gameData.get(gameName);
-                data.playerCount++;
-                data.channels.add(voiceChannel);
             });
         } catch (error) {
             Logger.debug(`Error processing voice channel ${voiceChannel.name}: ${error.message}`);
@@ -919,7 +752,7 @@ class ThaiGameTracker {
     }
 
     // ===========================================================================================
-    // ADVANCED EMBED CREATION
+    // ADVANCED EMBED CREATION WITH DETAILED STATS
     // ===========================================================================================
 
     async createGameEmbed(gameData) {
@@ -929,24 +762,24 @@ class ThaiGameTracker {
                 .slice(0, 5);
 
             const embed = new EmbedBuilder()
-                .setTitle(THAI_TEXT.embed.title)
-                .setDescription(THAI_TEXT.embed.description)
+                .setTitle(UI_TEXT.embed.title)
+                .setDescription(UI_TEXT.embed.description)
                 .setColor(CONFIG.embedColors.gaming)
                 .setTimestamp()
                 .setFooter({
-                    text: `${THAI_TEXT.embed.footer} ${CONFIG.updateInterval} ${THAI_TEXT.console.seconds}`,
+                    text: `${UI_TEXT.embed.footer} ${CONFIG.updateInterval} ${UI_TEXT.console.seconds}`,
                     iconURL: this.client.user?.displayAvatarURL()
                 });
 
             if (sortedGames.length === 0) {
                 embed.addFields({
-                    name: THAI_TEXT.embed.noGames.title,
-                    value: THAI_TEXT.embed.noGames.description,
+                    name: UI_TEXT.embed.noGames.title,
+                    value: UI_TEXT.embed.noGames.description,
                     inline: false
                 });
             } else {
                 this._addGameFields(embed, sortedGames);
-                this._addStatisticsField(embed, gameData);
+                this._addDetailedStatistics(embed, gameData);
             }
 
             return embed;
@@ -960,42 +793,74 @@ class ThaiGameTracker {
         const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
         
         sortedGames.forEach(([gameName, data], index) => {
-            const thaiGameName = this.translateGameName(gameName);
             const channelLinks = data.channels
                 .map(channel => `<#${channel.id}>`)
                 .join(' • ');
 
+            let fieldValue = [
+                `**${UI_TEXT.embed.fields.voiceChannels}:** ${channelLinks}`,
+                `**${UI_TEXT.embed.fields.playerCount}:** ${data.playerCount} ${UI_TEXT.embed.stats.people}`,
+                `**${UI_TEXT.embed.fields.channelCount}:** ${data.channels.length} ${UI_TEXT.embed.fields.channels}`
+            ];
+
+            // Add player names if enabled
+            if (CONFIG.showPlayerNames && data.players && data.players.length > 0) {
+                const playerMentions = data.players
+                    .slice(0, 10) // Limit to prevent embed size issues
+                    .map(player => `<@${player.id}>`)
+                    .join(', ');
+                
+                const remainingCount = data.players.length > 10 ? ` (+${data.players.length - 10} more)` : '';
+                fieldValue.push(`**${UI_TEXT.embed.fields.players}:** ${playerMentions}${remainingCount}`);
+            }
+
+            // Add session time if available
+            const avgTime = this.sessionTracker.getAverageSessionTime(gameName);
+            if (avgTime > 0) {
+                fieldValue.push(`**Avg Session:** ${avgTime} ${UI_TEXT.embed.stats.minutes}`);
+            }
+
             embed.addFields({
-                name: `${rankEmojis[index]} ${thaiGameName} (${data.playerCount} ${THAI_TEXT.embed.stats.people})`,
-                value: [
-                    `**${THAI_TEXT.embed.fields.voiceChannels}:** ${channelLinks}`,
-                    `**${THAI_TEXT.embed.fields.playerCount}:** ${data.playerCount} ${THAI_TEXT.embed.stats.people}`,
-                    `**${THAI_TEXT.embed.fields.channelCount}:** ${data.channels.length} ${THAI_TEXT.embed.fields.channels}`
-                ].join('\n'),
+                name: `${rankEmojis[index]} ${gameName} (${data.playerCount} ${UI_TEXT.embed.stats.people})`,
+                value: fieldValue.join('\n'),
                 inline: false
             });
         });
     }
 
-    _addStatisticsField(embed, gameData) {
+    _addDetailedStatistics(embed, gameData) {
         const totalPlayers = Object.values(gameData)
             .reduce((sum, data) => sum + data.playerCount, 0);
         const totalGames = Object.keys(gameData).length;
+        const activeChannels = new Set();
+        
+        Object.values(gameData).forEach(data => {
+            data.channels.forEach(channel => activeChannels.add(channel.id));
+        });
+
+        const mostPopularToday = this.sessionTracker.getMostPopularToday();
+        
+        const statsValue = [
+            `**${UI_TEXT.embed.stats.totalPlayers}:** ${totalPlayers} ${UI_TEXT.embed.stats.people}`,
+            `**${UI_TEXT.embed.stats.totalGames}:** ${totalGames} ${UI_TEXT.embed.stats.games}`,
+            `**${UI_TEXT.embed.stats.activeChannels}:** ${activeChannels.size} ${UI_TEXT.embed.fields.channels}`
+        ];
+
+        if (mostPopularToday) {
+            statsValue.push(`**${UI_TEXT.embed.stats.mostPopular}:** ${mostPopularToday}`);
+        }
 
         embed.addFields({
-            name: THAI_TEXT.embed.stats.title,
-            value: [
-                `**${THAI_TEXT.embed.stats.totalPlayers}:** ${totalPlayers} ${THAI_TEXT.embed.stats.people}`,
-                `**${THAI_TEXT.embed.stats.totalGames}:** ${totalGames} ${THAI_TEXT.embed.stats.games}`
-            ].join('\n'),
+            name: UI_TEXT.embed.stats.title,
+            value: statsValue.join('\n'),
             inline: false
         });
     }
 
     _createErrorEmbed() {
         return new EmbedBuilder()
-            .setTitle('❌ เกิดข้อผิดพลาด')
-            .setDescription('ไม่สามารถโหลดข้อมูลเกมได้ในขณะนี้')
+            .setTitle('❌ Error occurred')
+            .setDescription('Could not load game data at this time')
             .setColor(CONFIG.embedColors.error)
             .setTimestamp();
     }
@@ -1007,10 +872,10 @@ class ThaiGameTracker {
     async updateGameTracker() {
         return ResilientExecutor.executeWithRetry(async () => {
             if (!this.outputChannel) {
-                throw new Error(THAI_TEXT.console.noOutputChannel);
+                throw new Error(UI_TEXT.console.noOutputChannel);
             }
 
-            Logger.info(THAI_TEXT.console.updating);
+            Logger.info(UI_TEXT.console.updating);
 
             const gameData = await this.collectGameData();
             const embed = await this.createGameEmbed(gameData);
@@ -1021,16 +886,16 @@ class ThaiGameTracker {
                         this.outputChannel.messages.fetch(this.lastMessageId)
                     );
                     await lastMessage.edit({ embeds: [embed] });
-                    Logger.success(THAI_TEXT.console.updated);
+                    Logger.success(UI_TEXT.console.updated);
                 } catch (error) {
-                    Logger.warn(THAI_TEXT.console.editFailed);
+                    Logger.warn(UI_TEXT.console.editFailed);
                     const newMessage = await this.outputChannel.send({ embeds: [embed] });
                     this.lastMessageId = newMessage.id;
                 }
             } else {
                 const newMessage = await this.outputChannel.send({ embeds: [embed] });
                 this.lastMessageId = newMessage.id;
-                Logger.success(THAI_TEXT.console.newMessage);
+                Logger.success(UI_TEXT.console.newMessage);
             }
         }, 'Game tracker update');
     }
@@ -1056,7 +921,7 @@ class ThaiGameTracker {
             });
         }, CONFIG.updateInterval * 1000);
 
-        Logger.success(`${THAI_TEXT.console.autoUpdate} ${CONFIG.updateInterval} ${THAI_TEXT.console.seconds}`);
+        Logger.success(`${UI_TEXT.console.autoUpdate} ${CONFIG.updateInterval} ${UI_TEXT.console.seconds}`);
     }
 
     stopAutoUpdate() {
@@ -1080,14 +945,14 @@ class ThaiGameTracker {
     }
 
     async _handleReady() {
-        Logger.success(`🚀 ${this.client.user.tag} ${THAI_TEXT.console.ready}`);
+        Logger.success(`🚀 ${this.client.user.tag} ${UI_TEXT.console.ready}`);
 
         try {
             await this._initializeBot();
             this.isReady = true;
             this.startAutoUpdate();
         } catch (error) {
-            Logger.error(THAI_TEXT.errors.initFailed, error);
+            Logger.error(UI_TEXT.errors.initFailed, error);
             this.isReady = false;
         }
     }
@@ -1101,12 +966,13 @@ class ThaiGameTracker {
             this.guild.channels.fetch(CONFIG.outputChannelId)
         );
 
-        if (!this.guild) throw new Error(THAI_TEXT.console.noGuild);
-        if (!this.outputChannel) throw new Error(THAI_TEXT.console.noChannel);
+        if (!this.guild) throw new Error(UI_TEXT.console.noGuild);
+        if (!this.outputChannel) throw new Error(UI_TEXT.console.noChannel);
 
-        Logger.info(`📋 ${THAI_TEXT.console.connecting}: ${this.guild.name}`);
-        Logger.info(`📝 ${THAI_TEXT.console.outputChannel}: ${this.outputChannel.name}`);
-        Logger.info(`👁️ ${THAI_TEXT.console.monitoring}: ${CONFIG.monitoredCategoryIds.length} ${THAI_TEXT.console.categories}`);
+        Logger.info(`📋 ${UI_TEXT.console.connecting}: ${this.guild.name}`);
+        Logger.info(`📝 ${UI_TEXT.console.outputChannel}: ${this.outputChannel.name}`);
+        Logger.info(`👁️ ${UI_TEXT.console.monitoring}: ${CONFIG.monitoredCategoryIds.length} ${UI_TEXT.console.categories}`);
+        Logger.info(`👤 Player names display: ${CONFIG.showPlayerNames ? 'Enabled' : 'Disabled'}`);
     }
 
     _handleVoiceStateUpdate(oldState, newState) {
@@ -1116,7 +982,7 @@ class ThaiGameTracker {
         const isNewChannelMonitored = newState.channel && this._isChannelMonitored(newState.channel);
 
         if (isOldChannelMonitored || isNewChannelMonitored) {
-            Logger.debug(`${THAI_TEXT.console.voiceChange}: ${newState.member?.displayName}`);
+            Logger.debug(`${UI_TEXT.console.voiceChange}: ${newState.member?.displayName}`);
             this.cache.clear(); // Clear cache to ensure fresh data
             this.debouncer.debounce('voiceUpdate', () => this.updateGameTracker(), 2000);
         }
@@ -1127,7 +993,7 @@ class ThaiGameTracker {
 
         const voiceState = newPresence.member.voice;
         if (voiceState.channel && this._isChannelMonitored(voiceState.channel)) {
-            Logger.debug(`${THAI_TEXT.console.gameChange}: ${newPresence.member.displayName}`);
+            Logger.debug(`${UI_TEXT.console.gameChange}: ${newPresence.member.displayName}`);
             this.cache.clear(); // Clear cache to ensure fresh data
             this.debouncer.debounce('presenceUpdate', () => this.updateGameTracker(), 1000);
         }
@@ -1152,7 +1018,7 @@ class ThaiGameTracker {
     }
 
     async stop() {
-        Logger.info(`\n🛑 ${THAI_TEXT.console.stopping}`);
+        Logger.info(`\n🛑 ${UI_TEXT.console.stopping}`);
         
         this.stopAutoUpdate();
         this.cache.clear();
@@ -1171,7 +1037,8 @@ class ThaiGameTracker {
             cache: this.cache.getStats(),
             memory: process.memoryUsage(),
             uptime: process.uptime(),
-            isReady: this.isReady
+            isReady: this.isReady,
+            gameDatabase: GAME_DATABASE.size
         };
     }
 }
@@ -1180,7 +1047,7 @@ class ThaiGameTracker {
 // INITIALIZATION & PROCESS MANAGEMENT
 // ===========================================================================================
 
-const bot = new ThaiGameTracker();
+const bot = new GameTracker();
 
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
@@ -1195,16 +1062,16 @@ process.on('SIGTERM', async () => {
 
 // Error handlers
 process.on('unhandledRejection', (error) => {
-    Logger.error(`${THAI_TEXT.errors.unhandledRejection}:`, error);
+    Logger.error(`${UI_TEXT.errors.unhandledRejection}:`, error);
 });
 
 process.on('uncaughtException', (error) => {
-    Logger.error(`${THAI_TEXT.errors.uncaughtException}:`, error);
+    Logger.error(`${UI_TEXT.errors.uncaughtException}:`, error);
     process.exit(1);
 });
 
 // Start the bot
 bot.start().catch(error => {
-    Logger.error(THAI_TEXT.errors.connectionFailed, error);
+    Logger.error(UI_TEXT.errors.connectionFailed, error);
     process.exit(1);
 });
