@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, ChannelType, ActivityType } = r
 require('dotenv').config();
 
 // ===========================================================================================
-// CONFIGURATION & CONSTANTS
+// การกำหนดค่าและค่าคงที่ (CONFIGURATION & CONSTANTS)
 // ===========================================================================================
 
 const CONFIG = {
@@ -13,364 +13,573 @@ const CONFIG = {
     updateInterval: parseInt(process.env.UPDATE_INTERVAL) || 10,
     showPlayerNames: process.env.SHOW_PLAYER_NAMES === 'true' || false,
     
-    // Performance & Resilience Settings
+    // การตั้งค่าประสิทธิภาพและความทนทาน (Performance & Resilience Settings)
     maxRetries: 3,
-    retryDelay: 2000,
-    cacheTimeout: 30000, // 30 seconds
-    debounceDelay: 3000, // 3 seconds
-    maxEmbedFields: 25,
-    connectionTimeout: 10000,
+    retryDelay: 1500,
+    baseRetryDelay: 500,
+    maxRetryDelay: 5000,
+    circuitBreakerThreshold: 5,
+    circuitBreakerTimeout: 30000,
     
-    // Embed Configuration
+    // การตั้งค่าแคช (Cache Settings)
+    cache: {
+        gameData: 5000,      // 5 วินาที
+        userActivity: 15000, // 15 วินาที  
+        channelData: 30000,  // 30 วินาที
+        longTerm: 300000     // 5 นาที
+    },
+    
+    // การตั้งค่า Debouncing
+    debounce: {
+        voiceUpdate: 2000,
+        presenceUpdate: 1000,
+        batchUpdate: 3000
+    },
+    
+    // การตั้งค่าการประมวลผลแบบขนาน (Parallel Processing)
+    parallel: {
+        maxConcurrentOperations: 10,
+        batchSize: 5,
+        timeoutMs: 8000
+    },
+    
+    // สีของ Embed
     embedColors: {
+        gaming: '#9146FF',
+        streaming: '#FF6B6B', 
+        general: '#4169E1',
         success: '#00FF7F',
         warning: '#FFD700',
-        error: '#FF6B6B',
-        info: '#4169E1',
-        gaming: '#9146FF'
+        error: '#FF4444'
     }
 };
 
 // ===========================================================================================
-// COMPREHENSIVE GAME DATABASE (3000+ Games) - FOR RECOGNITION ONLY, NO TRANSLATION
+// ฐานข้อมูลเกมและแอปพลิเคชัน (COMPREHENSIVE GAME & APP DATABASE)
 // ===========================================================================================
 
-const GAME_DATABASE = new Set([
-    // ===== Popular Games =====
-    'VALORANT', 'Fortnite', 'League of Legends', 'Counter-Strike 2', 'CS2', 'CS:GO', 'Counter-Strike: Global Offensive',
-    'Apex Legends', 'Minecraft', 'Roblox', 'Grand Theft Auto V', 'GTA V', 'Call of Duty', 'Call of Duty: Modern Warfare',
-    'Call of Duty: Warzone', 'Call of Duty: Modern Warfare II', 'Call of Duty: Modern Warfare III', 'Call of Duty: Black Ops',
-    'Call of Duty: Vanguard', 'Call of Duty: Cold War', 'Call of Duty: Mobile', 'Overwatch 2', 'Rocket League',
-    'Genshin Impact', 'Fall Guys', 'Among Us', 'FIFA 24', 'FIFA 23', 'FIFA 22', 'EA SPORTS FC 24', 'EA SPORTS FC 25',
-    'PUBG', 'PUBG: BATTLEGROUNDS', 'PUBG Mobile', 'Destiny 2', 'World of Warcraft', 'Dota 2', 'Rainbow Six Siege',
-    
-    // ===== Steam Popular =====
-    'Battlefield 2042', 'Battlefield V', 'Battlefield 1', 'Battlefield 4', 'Cyberpunk 2077', 'The Witcher 3',
-    'The Witcher 3: Wild Hunt', 'Elden Ring', 'Dark Souls', 'Dark Souls III', 'Dark Souls II', 'Hades',
-    'Stardew Valley', 'Terraria', 'Dead by Daylight', 'Phasmophobia', 'Valheim', 'Sea of Thieves', 'It Takes Two',
-    'A Way Out', 'Portal 2', 'Portal', 'Rust', 'Team Fortress 2', 'ARK: Survival Evolved', 'Football Manager 2024',
-    'Football Manager 2023', 'Wallpaper Engine', 'Left 4 Dead 2', 'Garry\'s Mod', 'Grand Theft Auto: San Andreas',
-    
-    // ===== Battle Royale =====
-    'Realm Royale', 'Ring of Elysium', 'Super Animal Royale', 'Hyper Scape', 'Naraka: Bladepoint', 'Spellbreak',
-    'Darwin Project', 'The Culling', 'H1Z1', 'Blackout', 'Warzone 2.0', 'Warzone Mobile',
-    
-    // ===== MOBA Games =====
-    'Heroes of the Storm', 'Smite', 'Mobile Legends', 'Arena of Valor', 'Vainglory', 'Heroes of Newerth',
-    'Paragon', 'Battlerite', 'Strife', 'Dawngate', 'Infinite Crisis', 'Prime World',
-    
-    // ===== RPG Games =====
-    'Skyrim', 'The Elder Scrolls V: Skyrim', 'The Elder Scrolls Online', 'Fallout 4', 'Fallout 76', 'Fallout: New Vegas',
-    'Mass Effect', 'Mass Effect Legendary Edition', 'Dragon Age', 'Dragon Age: Inquisition', 'Final Fantasy XIV',
-    'Final Fantasy XV', 'Final Fantasy VII Remake', 'Persona 5', 'Persona 5 Royal', 'NieR: Automata', 'NieR Replicant',
-    'Monster Hunter World', 'Monster Hunter Rise', 'Monster Hunter: World', 'Divinity: Original Sin 2',
-    'Baldur\'s Gate 3', 'Pathfinder: Wrath of the Righteous', 'Pillars of Eternity', 'Disco Elysium',
-    'The Outer Worlds', 'Wasteland 3', 'Torment: Tides of Numenera', 'Tyranny', 'Solasta', 'Encased',
-    
-    // ===== FPS Games =====
-    'Titanfall 2', 'Doom Eternal', 'Doom (2016)', 'Doom', 'Wolfenstein', 'Wolfenstein: The New Order',
-    'Quake Champions', 'Unreal Tournament', 'Hunt: Showdown', 'Escape from Tarkov', 'Insurgency: Sandstorm',
-    'Squad', 'Hell Let Loose', 'Post Scriptum', 'Rising Storm 2: Vietnam', 'Red Orchestra 2',
-    
-    // ===== MMO Games =====
-    'Guild Wars 2', 'New World', 'Lost Ark', 'Black Desert Online', 'Star Wars: The Old Republic',
-    'Path of Exile', 'RuneScape', 'Old School RuneScape', 'MapleStory', 'Phantasy Star Online 2',
-    'Tera', 'Blade & Soul', 'Aion', 'ArcheAge', 'Albion Online', 'EVE Online', 'Star Trek Online',
-    
-    // ===== Racing Games =====
-    'Forza Horizon 5', 'Forza Horizon 4', 'Forza Motorsport', 'Gran Turismo 7', 'F1 23', 'F1 22', 'F1 24',
-    'Need for Speed Heat', 'Need for Speed Unbound', 'Need for Speed: Hot Pursuit', 'The Crew 2', 'The Crew Motorfest',
-    'Dirt Rally 2.0', 'Project CARS 3', 'Assetto Corsa', 'Assetto Corsa Competizione', 'iRacing',
-    'BeamNG.drive', 'Wreckfest', 'GRID', 'GRID Legends', 'Burnout Paradise',
-    
-    // ===== Sports Games =====
-    'NBA 2K24', 'NBA 2K23', 'NBA 2K22', 'MLB The Show 23', 'Madden NFL 24', 'Madden NFL 23',
-    'WWE 2K23', 'WWE 2K22', 'Tony Hawk\'s Pro Skater', 'Riders Republic', 'STEEP', 'Session',
-    'Skater XL', 'OlliOlli World', 'UFC 4', 'Fight Night', 'PGA Tour 2K23',
-    
-    // ===== Simulation Games =====
-    'Microsoft Flight Simulator', 'Euro Truck Simulator 2', 'American Truck Simulator', 'Cities: Skylines',
-    'Cities Skylines', 'Planet Coaster', 'Planet Zoo', 'Two Point Hospital', 'Farming Simulator 22',
-    'Farming Simulator 2022', 'PowerWash Simulator', 'Car Mechanic Simulator', 'House Flipper',
-    'PC Building Simulator', 'Train Simulator', 'Snowrunner', 'Mudrunner', 'SpinTires',
-    
-    // ===== Indie Games =====
-    'Celeste', 'Hollow Knight', 'Cuphead', 'Dead Cells', 'Ori and the Will of the Wisps',
-    'Ori and the Blind Forest', 'Subnautica', 'Subnautica: Below Zero', 'The Forest', 'Green Hell', 'Raft',
-    'Outer Wilds', 'Return of the Obra Dinn', 'Papers, Please', 'This War of Mine', 'Frostpunk',
-    'Katana ZERO', 'Hotline Miami', 'Hotline Miami 2', 'Baba Is You', 'The Witness',
-    
-    // ===== Strategy Games =====
-    'Age of Empires IV', 'Age of Empires II', 'Age of Empires III', 'Civilization VI', 'Civilization V',
-    'Total War: Warhammer III', 'Total War: Rome II', 'StarCraft II', 'Command & Conquer', 'Command & Conquer Remastered',
-    'Crusader Kings III', 'Hearts of Iron IV', 'Europa Universalis IV', 'XCOM 2', 'XCOM: Enemy Unknown',
-    'Company of Heroes 3', 'Warhammer 40,000: Dawn of War', 'They Are Billions', 'Frostpunk',
-    
-    // ===== Horror Games =====
-    'Resident Evil', 'Resident Evil 4', 'Resident Evil Village', 'Silent Hill', 'Outlast', 'Outlast 2',
-    'Amnesia', 'Amnesia: The Dark Descent', 'The Dark Pictures Anthology', 'Until Dawn', 'Little Nightmares',
-    'Little Nightmares II', 'SOMA', 'Alien: Isolation', 'Dead Space', 'Dead Space Remake',
-    'The Evil Within', 'Layers of Fear', 'Visage', 'Madison', 'MADiSON',
-    
-    // ===== Co-op Games =====
-    'Overcooked! 2', 'Overcooked!', 'Moving Out', 'Deep Rock Galactic', 'Risk of Rain 2', 'Don\'t Starve Together',
-    'Human: Fall Flat', 'Gang Beasts', 'Fall Guys: Ultimate Knockout', 'Cuphead', 'Unravel Two',
-    'Lovers in a Dangerous Spacetime', 'Tools Up!', 'Cook, Serve, Delicious!', 'Stardew Valley',
-    
-    // ===== Fighting Games =====
-    'Street Fighter 6', 'Street Fighter V', 'Tekken 7', 'Tekken 8', 'Mortal Kombat 11', 'Mortal Kombat 1',
-    'Guilty Gear Strive', 'Dragon Ball FighterZ', 'Super Smash Bros. Ultimate', 'King of Fighters XV',
-    'BlazBlue', 'Soul Calibur VI', 'Injustice 2', 'Granblue Fantasy Versus', 'Under Night In-Birth',
-    
-    // ===== Puzzle Games =====
-    'Tetris Effect', 'The Talos Principle', 'Manifold Garden', 'Superliminal', 'Stephen\'s Sausage Roll',
-    'The Stanley Parable', 'Antichamber', 'Fez', 'Monument Valley', 'Braid', 'Limbo', 'Inside',
-    
-    // ===== Mobile Games (also on PC) =====
-    'Honkai: Star Rail', 'Honkai Impact 3rd', 'Free Fire', 'Clash of Clans', 'Clash Royale',
-    'Brawl Stars', 'Candy Crush Saga', 'Pokemon GO', 'Pokemon Unite', 'Wild Rift',
-    
-    // ===== VR Games =====
-    'Half-Life: Alyx', 'Beat Saber', 'Boneworks', 'Blade & Sorcery', 'Pavlov VR', 'Superhot VR',
-    'The Walking Dead: Saints & Sinners', 'Rec Room', 'VRChat', 'Pistol Whip', 'Synth Riders',
-    'Population: One', 'Contractors', 'Onward', 'Arizona Sunshine', 'Job Simulator',
-    
-    // ===== Retro/Classic Games =====
-    'Half-Life 2', 'Counter-Strike 1.6', 'Diablo II', 'Diablo II: Resurrected', 'StarCraft', 'Warcraft III',
-    'Command & Conquer: Red Alert', 'Age of Empires II: Definitive Edition', 'Quake', 'Doom',
-    'Duke Nukem 3D', 'Blood', 'Shadow Warrior', 'Serious Sam', 'Painkiller',
-    
-    // ===== Sandbox/Creative Games =====
-    'Garry\'s Mod', 'LittleBigPlanet', 'Super Mario Maker', 'Dreams', 'Kerbal Space Program',
-    'Space Engineers', 'No Man\'s Sky', 'Astroneer', 'Scrap Mechanic', 'Besiege',
-    
-    // ===== Platformer Games =====
-    'Super Mario Odyssey', 'Ori and the Blind Forest', 'Super Meat Boy', 'A Hat in Time',
-    'Shovel Knight', 'Rayman Legends', 'Crash Bandicoot', 'Spyro', 'Psychonauts 2',
-    
-    // ===== Card Games =====
-    'Hearthstone', 'Magic: The Gathering Arena', 'Gwent', 'Legends of Runeterra', 'Yu-Gi-Oh! Master Duel',
-    'Slay the Spire', 'Monster Train', 'Inscryption', 'Dicey Dungeons', 'Griftlands',
-    'Nowhere Prophet', 'Tainted Grail', 'Roguebook', 'Pirates Outlaws',
-    
-    // ===== Auto Battler Games =====
-    'Teamfight Tactics', 'Dota Underlords', 'Auto Chess', 'Hearthstone Battlegrounds', 'Super Auto Pets',
-    'Legion TD 2', 'Chess Rush', 'Might & Magic: Chess Royale',
-    
-    // ===== Roguelike Games =====
-    'The Binding of Isaac', 'Enter the Gungeon', 'FTL: Faster Than Light', 'Spelunky 2', 'Rogue Legacy 2',
-    'Darkest Dungeon', 'Darkest Dungeon 2', 'Into the Breach', 'Gunfire Reborn', 'Risk of Rain',
-    'Nuclear Throne', 'Crypt of the NecroDancer', 'Wizard of Legend', 'One Step From Eden',
-    
-    // ===== Music/Rhythm Games =====
-    'Guitar Hero', 'Rock Band', 'osu!', 'Just Dance', 'Geometry Dash', 'Friday Night Funkin\'',
-    'A Dance of Fire and Ice', 'Thumper', 'Audiosurf', 'Stepmania', 'Clone Hero',
-    
-    // ===== Educational/Programming Games =====
-    'SpaceChem', 'Human Resource Machine', 'while True: learn()', 'TIS-100', 'SHENZHEN I/O',
-    'Opus Magnum', 'Factorio', 'Satisfactory', 'Shapez', 'Mindustry', 'Autonauts',
-    
-    // ===== Popular Emulator Games =====
-    'BlueStacks', 'NoxPlayer', 'MEmu', 'LDPlayer', 'PCSX2', 'Dolphin', 'Cemu', 'Yuzu', 'Ryujinx',
-    'RetroArch', 'Project64', 'ePSXe', 'PPSSPP', 'DeSmuME', 'Citra', 'mGBA',
-    
-    // ===== Survival Games =====
-    'The Long Dark', 'Conan Exiles', '7 Days to Die', 'DayZ', 'Scum', 'Raft', 'Grounded',
-    'State of Decay 2', 'Project Zomboid', 'The Infected', 'Icarus', 'V Rising',
-    
-    // ===== MMORPG Additional =====
-    'Lineage II', 'Mu Online', 'Cabal Online', 'Perfect World', 'Ragnarok Online', 'Tree of Savior',
-    'Mabinogi', 'Vindictus', 'Dragon Nest', 'Closers', 'Elsword', 'Grand Chase',
-    
-    // ===== Productivity/Streaming =====
-    'Discord', 'Spotify', 'Visual Studio Code', 'Photoshop', 'OBS Studio', 'Streamlabs OBS',
-    'Chrome', 'Firefox', 'Steam', 'Epic Games Launcher', 'Battle.net', 'Origin', 'Uplay',
-    'Xbox App', 'GeForce Experience', 'AMD Software', 'MSI Afterburner', 'HWiNFO64',
-    
-    // ===== Additional Popular Games =====
-    'Valorant', 'Apex Legends Mobile', 'Diablo IV', 'Overwatch', 'Heroes & Generals',
-    'War Thunder', 'World of Tanks', 'World of Warships', 'Crossout', 'Enlisted',
-    'Planetside 2', 'Titanfall', 'Battlefield: Bad Company 2', 'Medal of Honor',
-    'Crysis', 'Far Cry 6', 'Far Cry 5', 'Watch Dogs: Legion', 'Assassin\'s Creed Valhalla',
-    'Ghost Recon Breakpoint', 'The Division 2', 'Splinter Cell', 'Prince of Persia',
-    'Beyond Good and Evil', 'Rayman', 'Trials Rising', 'Steep', 'For Honor',
-    'Anno 1800', 'The Settlers', 'SimCity', 'Tropico 6', 'Surviving Mars',
-    'Oxygen Not Included', 'RimWorld', 'Prison Architect', 'Two Point Campus',
-    'Game Dev Tycoon', 'Software Inc.', 'Mad Games Tycoon 2', 'Parkitect',
-    
-    // ===== Newer/Trending Games =====
-    'Palworld', 'Lethal Company', 'Pizza Tower', 'Hi-Fi Rush', 'Atomic Heart',
-    'Hogwarts Legacy', 'Starfield', 'Baldur\'s Gate 3', 'Spider-Man Remastered',
-    'God of War', 'Horizon Zero Dawn', 'Death Stranding', 'Control', 'Remedy',
-    'Alan Wake 2', 'Lies of P', 'Lords of the Fallen', 'The Last of Us Part I',
-    'Uncharted: Legacy of Thieves Collection', 'Ghost of Tsushima', 'Bloodborne',
-    'Sekiro: Shadows Die Twice', 'Nioh 2', 'Code Vein', 'The Surge 2',
-    'Remnant: From the Ashes', 'Remnant II', 'Outriders', 'Anthem',
-    'Mass Effect Andromeda', 'Dragon Age: The Veilguard', 'BioWare',
-    'Bethesda', 'Obsidian', 'inXile', 'CD Projekt RED', 'Larian Studios',
-    
-    // ===== More Simulation =====
-    'Train Sim World', 'OMSI 2', 'Fernbus Simulator', 'Construction Simulator',
-    'Gold Rush: The Game', 'Lumberjack\'s Dynasty', 'Ranch Simulator',
-    'Gas Station Simulator', 'Supermarket Simulator', 'Internet Cafe Simulator',
-    'PC Building Simulator 2', 'Thief Simulator', 'House Flipper 2',
-    
-    // Continue adding more games...
-    'Warframe', 'Payday 2', 'Payday 3', 'Insurgency', 'Day of Infamy',
-    'Red Dead Redemption 2', 'Red Dead Online', 'Mafia', 'Mafia II', 'Mafia III',
-    'Saints Row', 'Sleeping Dogs', 'Yakuza', 'Yakuza: Like a Dragon',
-    'Persona 4 Golden', 'Shin Megami Tensei', 'Catherine', 'Nier',
-    'Final Fantasy', 'Dragon Quest', 'Chrono Trigger', 'Secret of Mana',
-    'Tales of Arise', 'Scarlet Nexus', 'Code Geass', 'Evangelion',
-    'Gundam', 'Mobile Suit Gundam', 'One Piece', 'Naruto', 'Dragon Ball',
-    'Attack on Titan', 'Demon Slayer', 'My Hero Academia', 'Jujutsu Kaisen'
+// เกมที่แท้จริง (Real Games)
+const REAL_GAMES = new Set([
+    'VALORANT', 'Fortnite', 'League of Legends', 'Counter-Strike 2', 'CS2', 'CS:GO', 
+    'Apex Legends', 'Minecraft', 'Roblox', 'Grand Theft Auto V', 'GTA V', 'Call of Duty',
+    'Overwatch 2', 'Rocket League', 'Genshin Impact', 'Fall Guys', 'Among Us', 'FIFA 24',
+    'PUBG', 'Destiny 2', 'World of Warcraft', 'Dota 2', 'Rainbow Six Siege', 'Battlefield 2042',
+    'Cyberpunk 2077', 'The Witcher 3', 'Elden Ring', 'Dark Souls', 'Hades', 'Stardew Valley',
+    'Terraria', 'Dead by Daylight', 'Phasmophobia', 'Valheim', 'Sea of Thieves', 'Portal 2',
+    'Rust', 'ARK: Survival Evolved', 'Team Fortress 2', 'Left 4 Dead 2', 'Half-Life 2',
+    'Age of Empires IV', 'Civilization VI', 'StarCraft II', 'Total War', 'XCOM 2',
+    'Monster Hunter World', 'Final Fantasy XIV', 'The Elder Scrolls V: Skyrim', 'Fallout 4',
+    'Mass Effect', 'Dragon Age', 'Persona 5', 'NieR: Automata', 'Baldur\'s Gate 3',
+    'Divinity: Original Sin 2', 'The Outer Worlds', 'Disco Elysium', 'Hollow Knight',
+    'Celeste', 'Cuphead', 'Dead Cells', 'Risk of Rain 2', 'Slay the Spire', 'Into the Breach',
+    'Factorio', 'Satisfactory', 'Cities: Skylines', 'Planet Coaster', 'Two Point Hospital',
+    'Euro Truck Simulator 2', 'American Truck Simulator', 'Microsoft Flight Simulator',
+    'Farming Simulator 22', 'BeamNG.drive', 'Assetto Corsa', 'F1 23', 'Forza Horizon 5',
+    'Need for Speed', 'The Crew 2', 'The Crew Motorfest', 'Dirt Rally 2.0', 'GRID Legends',
+    'Street Fighter 6', 'Tekken 7', 'Mortal Kombat 11', 'Guilty Gear Strive', 'Dragon Ball FighterZ',
+    'Beat Saber', 'Half-Life: Alyx', 'Boneworks', 'VRChat', 'Rec Room', 'Pavlov VR',
+    'Hearthstone', 'Magic: The Gathering Arena', 'Legends of Runeterra', 'Yu-Gi-Oh! Master Duel',
+    'Auto Chess', 'Teamfight Tactics', 'Dota Underlords', 'Super Auto Pets',
+    'Escape from Tarkov', 'Hunt: Showdown', 'Squad', 'Hell Let Loose', 'Insurgency: Sandstorm',
+    'War Thunder', 'World of Tanks', 'World of Warships', 'Elite Dangerous', 'Star Citizen',
+    'No Man\'s Sky', 'Subnautica', 'The Forest', 'Green Hell', 'Raft', 'Grounded',
+    'Conan Exiles', '7 Days to Die', 'DayZ', 'State of Decay 2', 'Project Zomboid',
+    'RimWorld', 'Oxygen Not Included', 'Prison Architect', 'Tropico 6', 'Anno 1800',
+    'Crusader Kings III', 'Hearts of Iron IV', 'Europa Universalis IV', 'Stellaris',
+    'Kerbal Space Program', 'Space Engineers', 'Astroneer', 'Outer Wilds', 'The Witness',
+    'Baba Is You', 'Return of the Obra Dinn', 'Papers, Please', 'This War of Mine',
+    'Frostpunk', 'They Are Billions', 'Northgard', 'Age of Empires II', 'Command & Conquer',
+    'Red Alert', 'Company of Heroes', 'Dawn of War', 'Supreme Commander', 'Planetary Annihilation',
+    'Chess.com', 'Lichess', 'Tabletop Simulator', 'Jackbox Party Pack', 'Golf With Your Friends',
+    'Among Us', 'Phasmophobia', 'Lethal Company', 'Content Warning', 'Backrooms',
+    'SCP: Secret Laboratory', 'Garry\'s Mod', 'Wallpaper Engine', 'Rainmeter'
 ]);
 
-// Discord Activity Type Translations
-const ACTIVITY_TYPE_NAMES = {
-    [ActivityType.Playing]: 'Playing',
-    [ActivityType.Streaming]: 'Streaming',
-    [ActivityType.Listening]: 'Listening to',
-    [ActivityType.Watching]: 'Watching',
-    [ActivityType.Custom]: 'Custom Status',
-    [ActivityType.Competing]: 'Competing in'
-};
+// แอปพลิเคชันสตรีมมิ่งและการรับชม (Streaming & Viewing Apps)
+const STREAMING_APPS = new Set([
+    'YouTube', 'YouTube Music', 'Twitch', 'Netflix', 'Disney+', 'Prime Video', 'HBO Max',
+    'Crunchyroll', 'Funimation', 'VLC Media Player', 'PotPlayer', 'MPC-HC', 'OBS Studio',
+    'Streamlabs OBS', 'XSplit', 'NVIDIA Broadcast', 'Elgato Stream Deck', 'Streamlabs',
+    'Restream', 'TikTok', 'Instagram', 'Facebook', 'Twitter', 'Discord Stage',
+    'Zoom', 'Microsoft Teams', 'Google Meet', 'Skype', 'TeamSpeak', 'Mumble'
+]);
 
-// UI Text Constants
-const UI_TEXT = {
+// แอปพลิเคชันทั่วไป (General Apps)
+const GENERAL_APPS = new Set([
+    'Discord', 'Spotify', 'Apple Music', 'SoundCloud', 'Deezer', 'Tidal',
+    'Visual Studio Code', 'JetBrains', 'Sublime Text', 'Atom', 'Notepad++',
+    'Photoshop', 'GIMP', 'Illustrator', 'Blender', 'Maya', 'Cinema 4D',
+    'After Effects', 'Premiere Pro', 'DaVinci Resolve', 'Audacity', 'FL Studio',
+    'Chrome', 'Firefox', 'Edge', 'Safari', 'Opera', 'Brave',
+    'Steam', 'Epic Games Launcher', 'Battle.net', 'Origin', 'Uplay', 'GOG Galaxy',
+    'Xbox App', 'PlayStation App', 'GeForce Experience', 'AMD Software',
+    'MSI Afterburner', 'CPU-Z', 'GPU-Z', 'HWiNFO64', 'Core Temp',
+    'BlueStacks', 'NoxPlayer', 'MEmu', 'LDPlayer', 'GameLoop',
+    'VirtualBox', 'VMware', 'Hyper-V', 'Docker', 'WSL',
+    'Microsoft Office', 'LibreOffice', 'Google Docs', 'Notion', 'Obsidian',
+    'Slack', 'Telegram', 'WhatsApp', 'Signal', 'Element'
+]);
+
+// ===========================================================================================
+// ข้อความภาษาไทย (THAI UI TEXT CONSTANTS)
+// ===========================================================================================
+
+const THAI_TEXT = {
     embed: {
-        title: '🎮 TOP 5 Most Popular Games in Voice Chat',
-        description: 'Current games being played by members in voice channels',
-        noGames: {
-            title: '😴 No one is playing games right now',
-            description: 'No members are currently playing games in monitored voice channels'
+        title: '🎮 TOP 5 กิจกรรมยอดนิยมในห้องเสียง',
+        description: 'กิจกรรมปัจจุบันที่สมาชิกกำลังทำอยู่ในช่องเสียง',
+        noActivity: {
+            title: '😴 ไม่มีใครทำกิจกรรมในขณะนี้',
+            description: 'ยังไม่มีสมาชิกที่กำลังทำกิจกรรมใดๆ ในช่องเสียงที่ติดตาม'
         },
         stats: {
-            title: '📊 Detailed Statistics',
-            totalPlayers: 'Total Players',
-            totalGames: 'Total Games',
-            people: 'people',
-            games: 'games',
-            mostPopular: 'Most Popular Today',
-            avgDuration: 'Average Session',
-            activeChannels: 'Active Channels',
-            minutes: 'minutes'
+            title: '📊 สถิติโดยละเอียด',
+            totalUsers: 'รวมผู้ใช้งาน',
+            totalActivities: 'รวมกิจกรรม',
+            people: 'คน',
+            activities: 'กิจกรรม',
+            channels: 'ช่อง',
+            mostPopularToday: 'ยอดนิยมวันนี้',
+            avgDuration: 'ระยะเวลาเฉลี่ย',
+            activeChannels: 'ช่องที่ใช้งาน',
+            minutes: 'นาที',
+            performance: 'ประสิทธิภาพ',
+            cacheHitRate: 'อัตราการใช้แคช',
+            successRate: 'อัตราความสำเร็จ',
+            uptime: 'เวลาออนไลน์',
+            hours: 'ชั่วโมง'
         },
         fields: {
-            voiceChannels: 'Voice Channels',
-            playerCount: 'Player Count',
-            channelCount: 'Channel Count',
-            channels: 'channels',
-            players: 'Players'
+            voiceChannels: 'ช่องเสียง',
+            userCount: 'จำนวนคน',
+            channelCount: 'จำนวนช่อง',
+            players: 'ผู้เล่น',        // สำหรับเกม
+            viewers: 'ผู้รับชม',       // สำหรับ streaming
+            users: 'ผู้ใช้งาน',       // สำหรับแอปทั่วไป
+            sessionTime: 'เวลาเซสชัน'
         },
-        footer: 'Created by Game Tracker Bot • Updates every'
+        emojis: {
+            game: '🎮',
+            streaming: '📺',
+            general: '💻'
+        },
+        footer: 'สร้างโดย Thai Activity Tracker • อัปเดตทุก'
     },
     console: {
-        ready: 'Ready!',
-        connecting: 'Connected to server',
-        outputChannel: 'Output channel',
-        monitoring: 'Monitoring categories',
-        categories: 'categories',
-        updating: 'Updating game data...',
-        updated: 'Message updated successfully',
-        newMessage: 'New message sent successfully',
-        editFailed: 'Could not edit previous message, sending new one instead',
-        voiceChange: 'Voice channel change detected',
-        gameChange: 'Game activity change detected',
-        autoUpdate: 'Starting auto-update every',
-        seconds: 'seconds',
-        stopping: 'Stopping Bot...',
-        noOutputChannel: 'Output channel not found',
-        noGuild: 'Guild not found',
-        noChannel: 'Channel not found'
+        ready: 'พร้อมใช้งานแล้ว!',
+        connecting: 'เชื่อมต่อกับเซิร์ฟเวอร์',
+        outputChannel: 'ช่องข้อความ',
+        monitoring: 'ติดตามหมวดหมู่',
+        categories: 'หมวดหมู่',
+        updating: 'กำลังอัปเดตข้อมูลกิจกรรม...',
+        updated: 'อัปเดตข้อความสำเร็จ',
+        newMessage: 'ส่งข้อความใหม่สำเร็จ',
+        editFailed: 'ไม่สามารถแก้ไขข้อความเดิม ส่งข้อความใหม่แทน',
+        voiceChange: 'มีการเปลี่ยนแปลงในช่องเสียง',
+        activityChange: 'กิจกรรมเปลี่ยนแปลง',
+        autoUpdate: 'เริ่มการอัปเดตอัตโนมัติทุก',
+        seconds: 'วินาที',
+        stopping: 'กำลังปิด Bot...',
+        noOutputChannel: 'ไม่พบช่องข้อความสำหรับส่งข้อมูล',
+        noGuild: 'ไม่พบเซิร์ฟเวอร์ที่กำหนด',
+        noChannel: 'ไม่พบช่องข้อความที่กำหนด',
+        playerNamesEnabled: 'การแสดงชื่อผู้เล่น: เปิดใช้งาน',
+        playerNamesDisabled: 'การแสดงชื่อผู้เล่น: ปิดใช้งาน'
     },
     errors: {
-        updateFailed: 'Update failed',
-        initFailed: 'Initialization failed',
+        updateFailed: 'การอัปเดตล้มเหลว',
+        initFailed: 'การเริ่มต้นล้มเหลว',
         unhandledRejection: 'Unhandled Promise Rejection',
         uncaughtException: 'Uncaught Exception',
-        connectionFailed: 'Connection failed',
-        retrying: 'Retrying attempt'
+        connectionFailed: 'การเชื่อมต่อล้มเหลว',
+        retrying: 'กำลังลองใหม่ครั้งที่',
+        circuitBreakerOpen: 'Circuit Breaker เปิดอยู่',
+        operationTimeout: 'การดำเนินการหมดเวลา'
+    },
+    monitoring: {
+        performance: 'ประสิทธิภาพ',
+        cacheStats: 'สถิติแคช',
+        errorRate: 'อัตราข้อผิดพลาด',
+        responseTime: 'เวลาตอบสนอง',
+        memoryUsage: 'การใช้หน่วยความจำ',
+        activeConnections: 'การเชื่อมต่อที่ใช้งาน'
     }
 };
 
 // ===========================================================================================
-// PERFORMANCE & CACHING SYSTEM
+// ระบบแคชหลายระดับ (MULTI-LEVEL CACHING SYSTEM)
 // ===========================================================================================
 
-class PerformanceCache {
+class MultiLevelCache {
     constructor() {
-        this.cache = new Map();
-        this.statistics = {
-            hits: 0,
-            misses: 0,
-            evictions: 0
+        this.levels = {
+            l1: new Map(), // Fast cache - 5s
+            l2: new Map(), // Medium cache - 15s  
+            l3: new Map()  // Long cache - 5min
         };
+        this.statistics = {
+            hits: { l1: 0, l2: 0, l3: 0 },
+            misses: 0,
+            evictions: 0,
+            operations: 0
+        };
+        this.cleanupInterval = setInterval(() => this._cleanup(), 10000);
     }
 
-    set(key, value, ttl = CONFIG.cacheTimeout) {
+    set(key, value, level = 'l1') {
+        const ttl = level === 'l1' ? CONFIG.cache.gameData : 
+                   level === 'l2' ? CONFIG.cache.userActivity : 
+                   CONFIG.cache.longTerm;
+        
         const expiry = Date.now() + ttl;
-        this.cache.set(key, { value, expiry });
-        this._cleanup();
+        this.levels[level].set(key, { value, expiry, level });
+        this.statistics.operations++;
     }
 
     get(key) {
-        const item = this.cache.get(key);
-        if (!item) {
-            this.statistics.misses++;
-            return null;
+        this.statistics.operations++;
+        
+        // ค้นหาจาก L1 -> L2 -> L3
+        for (const [levelName, cache] of Object.entries(this.levels)) {
+            const item = cache.get(key);
+            if (item && Date.now() <= item.expiry) {
+                this.statistics.hits[levelName]++;
+                
+                // Promote to L1 if found in L2/L3
+                if (levelName !== 'l1') {
+                    this.set(key, item.value, 'l1');
+                }
+                
+                return item.value;
+            } else if (item) {
+                cache.delete(key);
+                this.statistics.evictions++;
+            }
         }
-
-        if (Date.now() > item.expiry) {
-            this.cache.delete(key);
-            this.statistics.misses++;
-            return null;
-        }
-
-        this.statistics.hits++;
-        return item.value;
+        
+        this.statistics.misses++;
+        return null;
     }
 
     _cleanup() {
         const now = Date.now();
-        for (const [key, item] of this.cache.entries()) {
-            if (now > item.expiry) {
-                this.cache.delete(key);
-                this.statistics.evictions++;
+        for (const cache of Object.values(this.levels)) {
+            for (const [key, item] of cache.entries()) {
+                if (now > item.expiry) {
+                    cache.delete(key);
+                    this.statistics.evictions++;
+                }
             }
         }
     }
 
     clear() {
-        this.cache.clear();
-        this.statistics = { hits: 0, misses: 0, evictions: 0 };
+        for (const cache of Object.values(this.levels)) {
+            cache.clear();
+        }
+        this.statistics = {
+            hits: { l1: 0, l2: 0, l3: 0 },
+            misses: 0,
+            evictions: 0,
+            operations: 0
+        };
     }
 
     getStats() {
-        return { ...this.statistics, size: this.cache.size };
+        const totalHits = Object.values(this.statistics.hits).reduce((a, b) => a + b, 0);
+        const hitRate = this.statistics.operations > 0 ? 
+            (totalHits / this.statistics.operations * 100).toFixed(2) : 0;
+            
+        return {
+            hitRate: parseFloat(hitRate),
+            ...this.statistics,
+            totalHits,
+            sizes: {
+                l1: this.levels.l1.size,
+                l2: this.levels.l2.size,
+                l3: this.levels.l3.size
+            }
+        };
+    }
+
+    destroy() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+        }
+        this.clear();
     }
 }
 
 // ===========================================================================================
-// DEBOUNCING & THROTTLING UTILITIES
+// ระบบ Circuit Breaker
 // ===========================================================================================
 
-class DebounceManager {
-    constructor() {
-        this.timers = new Map();
+class CircuitBreaker {
+    constructor(name, threshold = CONFIG.circuitBreakerThreshold) {
+        this.name = name;
+        this.threshold = threshold;
+        this.failureCount = 0;
+        this.lastFailureTime = null;
+        this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
     }
 
-    debounce(key, func, delay = CONFIG.debounceDelay) {
+    async execute(operation) {
+        if (this.state === 'OPEN') {
+            if (Date.now() - this.lastFailureTime > CONFIG.circuitBreakerTimeout) {
+                this.state = 'HALF_OPEN';
+            } else {
+                throw new Error(`${THAI_TEXT.errors.circuitBreakerOpen}: ${this.name}`);
+            }
+        }
+
+        try {
+            const result = await operation();
+            this._onSuccess();
+            return result;
+        } catch (error) {
+            this._onFailure();
+            throw error;
+        }
+    }
+
+    _onSuccess() {
+        this.failureCount = 0;
+        this.state = 'CLOSED';
+    }
+
+    _onFailure() {
+        this.failureCount++;
+        this.lastFailureTime = Date.now();
+        
+        if (this.failureCount >= this.threshold) {
+            this.state = 'OPEN';
+        }
+    }
+
+    getState() {
+        return {
+            name: this.name,
+            state: this.state,
+            failureCount: this.failureCount,
+            threshold: this.threshold
+        };
+    }
+}
+
+// ===========================================================================================
+// ระบบ Batch Processing
+// ===========================================================================================
+
+class BatchProcessor {
+    constructor(batchSize = CONFIG.parallel.batchSize) {
+        this.batchSize = batchSize;
+        this.queue = [];
+        this.processing = false;
+    }
+
+    async add(operation) {
+        return new Promise((resolve, reject) => {
+            this.queue.push({ operation, resolve, reject });
+            if (!this.processing) {
+                this._processBatch();
+            }
+        });
+    }
+
+    async _processBatch() {
+        if (this.processing || this.queue.length === 0) return;
+        
+        this.processing = true;
+        
+        while (this.queue.length > 0) {
+            const batch = this.queue.splice(0, this.batchSize);
+            const promises = batch.map(async ({ operation, resolve, reject }) => {
+                try {
+                    const result = await operation();
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+            
+            await Promise.allSettled(promises);
+        }
+        
+        this.processing = false;
+    }
+}
+
+// ===========================================================================================
+// ระบบติดตามการใช้งาน (Advanced Session Tracking)
+// ===========================================================================================
+
+class ActivitySessionTracker {
+    constructor() {
+        this.sessions = new Map(); // userId -> { activityName, type, startTime, channelId }
+        this.dailyStats = new Map(); // activityName -> { totalTime, userCount, sessions, type }
+        this.hourlyTrends = new Map(); // hour -> Map(activityName -> count)
+        this.lastReset = new Date().toDateString();
+        this.performanceMetrics = {
+            totalSessions: 0,
+            averageSessionLength: 0,
+            peakConcurrentUsers: 0,
+            dailyActiveUsers: new Set()
+        };
+    }
+
+    startSession(userId, activityName, activityType, channelId) {
+        // End existing session first
+        this.endSession(userId);
+        
+        this.sessions.set(userId, {
+            activityName,
+            activityType,
+            startTime: Date.now(),
+            channelId
+        });
+        
+        this.performanceMetrics.totalSessions++;
+        this.performanceMetrics.dailyActiveUsers.add(userId);
+        this._updatePeakConcurrent();
+    }
+
+    endSession(userId) {
+        const session = this.sessions.get(userId);
+        if (session) {
+            const duration = Date.now() - session.startTime;
+            this._addToDailyStats(session.activityName, session.activityType, duration);
+            this._updateHourlyTrends(session.activityName);
+            this.sessions.delete(userId);
+            this._updateAverageSessionLength(duration);
+        }
+    }
+
+    _addToDailyStats(activityName, activityType, duration) {
+        this._checkDayReset();
+        
+        if (!this.dailyStats.has(activityName)) {
+            this.dailyStats.set(activityName, {
+                totalTime: 0,
+                userCount: 0,
+                sessions: 0,
+                type: activityType
+            });
+        }
+
+        const stats = this.dailyStats.get(activityName);
+        stats.totalTime += duration;
+        stats.sessions += 1;
+    }
+
+    _updateHourlyTrends(activityName) {
+        const hour = new Date().getHours();
+        if (!this.hourlyTrends.has(hour)) {
+            this.hourlyTrends.set(hour, new Map());
+        }
+        
+        const hourlyData = this.hourlyTrends.get(hour);
+        hourlyData.set(activityName, (hourlyData.get(activityName) || 0) + 1);
+    }
+
+    _updatePeakConcurrent() {
+        const current = this.sessions.size;
+        if (current > this.performanceMetrics.peakConcurrentUsers) {
+            this.performanceMetrics.peakConcurrentUsers = current;
+        }
+    }
+
+    _updateAverageSessionLength(newDuration) {
+        const total = this.performanceMetrics.averageSessionLength * (this.performanceMetrics.totalSessions - 1);
+        this.performanceMetrics.averageSessionLength = (total + newDuration) / this.performanceMetrics.totalSessions;
+    }
+
+    _checkDayReset() {
+        const today = new Date().toDateString();
+        if (today !== this.lastReset) {
+            this.dailyStats.clear();
+            this.hourlyTrends.clear();
+            this.performanceMetrics.dailyActiveUsers.clear();
+            this.performanceMetrics.peakConcurrentUsers = 0;
+            this.lastReset = today;
+        }
+    }
+
+    getMostPopularToday() {
+        const stats = this.getDailyStats();
+        let mostPopular = null;
+        let maxTime = 0;
+
+        for (const [activityName, data] of stats) {
+            if (data.totalTime > maxTime) {
+                maxTime = data.totalTime;
+                mostPopular = { name: activityName, type: data.type };
+            }
+        }
+
+        return mostPopular;
+    }
+
+    getAverageSessionTime(activityName) {
+        const stats = this.dailyStats.get(activityName);
+        if (!stats || stats.sessions === 0) return 0;
+        return Math.round(stats.totalTime / stats.sessions / 60000); // in minutes
+    }
+
+    getDailyStats() {
+        this._checkDayReset();
+        return new Map(this.dailyStats);
+    }
+
+    getPerformanceMetrics() {
+        return {
+            ...this.performanceMetrics,
+            currentActiveSessions: this.sessions.size,
+            dailyActiveUsers: this.performanceMetrics.dailyActiveUsers.size,
+            averageSessionLengthMinutes: Math.round(this.performanceMetrics.averageSessionLength / 60000)
+        };
+    }
+}
+
+// ===========================================================================================
+// ระบบ Debouncing ขั้นสูง
+// ===========================================================================================
+
+class AdvancedDebounceManager {
+    constructor() {
+        this.timers = new Map();
+        this.executionQueue = new Map();
+        this.batchProcessor = new BatchProcessor();
+    }
+
+    debounce(key, func, delay = CONFIG.debounce.batchUpdate, immediate = false) {
         if (this.timers.has(key)) {
             clearTimeout(this.timers.get(key));
         }
 
-        const timer = setTimeout(() => {
+        if (immediate && !this.timers.has(key)) {
             func();
+        }
+
+        const timer = setTimeout(async () => {
+            if (!immediate) {
+                await this.batchProcessor.add(func);
+            }
             this.timers.delete(key);
         }, delay);
 
         this.timers.set(key, timer);
+    }
+
+    throttle(key, func, limit = 1000) {
+        const lastExecution = this.executionQueue.get(key) || 0;
+        const now = Date.now();
+        
+        if (now - lastExecution >= limit) {
+            this.executionQueue.set(key, now);
+            return func();
+        }
+        
+        return Promise.resolve();
     }
 
     cancel(key) {
@@ -385,167 +594,291 @@ class DebounceManager {
             clearTimeout(timer);
         }
         this.timers.clear();
+        this.executionQueue.clear();
     }
 }
 
 // ===========================================================================================
-// GAME SESSION TRACKING
+// ระบบ Logging ขั้นสูง
 // ===========================================================================================
 
-class GameSessionTracker {
+class AdvancedLogger {
     constructor() {
-        this.sessions = new Map(); // userId -> { gameName, startTime, channelId }
-        this.dailyStats = new Map(); // gameName -> { totalTime, playerCount, sessions }
-        this.lastReset = new Date().toDateString();
+        this.logLevels = {
+            ERROR: 0,
+            WARN: 1,
+            INFO: 2,
+            SUCCESS: 3,
+            DEBUG: 4,
+            TRACE: 5
+        };
+        this.currentLevel = this.logLevels.INFO;
+        this.metrics = {
+            errorCount: 0,
+            warnCount: 0,
+            totalLogs: 0
+        };
     }
 
-    startSession(userId, gameName, channelId) {
-        this.sessions.set(userId, {
-            gameName,
-            startTime: Date.now(),
-            channelId
+    setLevel(level) {
+        this.currentLevel = this.logLevels[level] || this.logLevels.INFO;
+    }
+
+    log(level, message, ...args) {
+        const levelNum = this.logLevels[level];
+        if (levelNum > this.currentLevel) return;
+
+        const timestamp = new Date().toLocaleString('th-TH', {
+            timeZone: 'Asia/Bangkok',
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
         });
-    }
 
-    endSession(userId) {
-        const session = this.sessions.get(userId);
-        if (session) {
-            const duration = Date.now() - session.startTime;
-            this._addToDailyStats(session.gameName, duration);
-            this.sessions.delete(userId);
-        }
-    }
-
-    updateSession(userId, newGameName, channelId) {
-        this.endSession(userId);
-        this.startSession(userId, newGameName, channelId);
-    }
-
-    _addToDailyStats(gameName, duration) {
-        this._checkDayReset();
-        
-        if (!this.dailyStats.has(gameName)) {
-            this.dailyStats.set(gameName, {
-                totalTime: 0,
-                playerCount: 0,
-                sessions: 0
-            });
-        }
-
-        const stats = this.dailyStats.get(gameName);
-        stats.totalTime += duration;
-        stats.sessions += 1;
-    }
-
-    _checkDayReset() {
-        const today = new Date().toDateString();
-        if (today !== this.lastReset) {
-            this.dailyStats.clear();
-            this.lastReset = today;
-        }
-    }
-
-    getDailyStats() {
-        this._checkDayReset();
-        return new Map(this.dailyStats);
-    }
-
-    getMostPopularToday() {
-        const stats = this.getDailyStats();
-        let mostPopular = null;
-        let maxTime = 0;
-
-        for (const [gameName, data] of stats) {
-            if (data.totalTime > maxTime) {
-                maxTime = data.totalTime;
-                mostPopular = gameName;
-            }
-        }
-
-        return mostPopular;
-    }
-
-    getAverageSessionTime(gameName) {
-        const stats = this.dailyStats.get(gameName);
-        if (!stats || stats.sessions === 0) return 0;
-        return Math.round(stats.totalTime / stats.sessions / 60000); // in minutes
-    }
-}
-
-// ===========================================================================================
-// ADVANCED LOGGING SYSTEM
-// ===========================================================================================
-
-class Logger {
-    static log(level, message, ...args) {
-        const timestamp = new Date().toLocaleString('en-US');
         const levels = {
             ERROR: '❌',
             WARN: '⚠️',
             INFO: 'ℹ️',
             SUCCESS: '✅',
-            DEBUG: '🔍'
+            DEBUG: '🔍',
+            TRACE: '🔎'
         };
-        
-        console.log(`[${timestamp}] ${levels[level] || 'ℹ️'} ${message}`, ...args);
+
+        const prefix = `[${timestamp}] ${levels[level]} [${level}]`;
+        console.log(`${prefix} ${message}`, ...args);
+
+        this.metrics.totalLogs++;
+        if (level === 'ERROR') this.metrics.errorCount++;
+        if (level === 'WARN') this.metrics.warnCount++;
     }
 
-    static error(message, ...args) { this.log('ERROR', message, ...args); }
-    static warn(message, ...args) { this.log('WARN', message, ...args); }
-    static info(message, ...args) { this.log('INFO', message, ...args); }
-    static success(message, ...args) { this.log('SUCCESS', message, ...args); }
-    static debug(message, ...args) { this.log('DEBUG', message, ...args); }
+    error(message, ...args) { this.log('ERROR', message, ...args); }
+    warn(message, ...args) { this.log('WARN', message, ...args); }
+    info(message, ...args) { this.log('INFO', message, ...args); }
+    success(message, ...args) { this.log('SUCCESS', message, ...args); }
+    debug(message, ...args) { this.log('DEBUG', message, ...args); }
+    trace(message, ...args) { this.log('TRACE', message, ...args); }
+
+    getMetrics() {
+        const errorRate = this.metrics.totalLogs > 0 ? 
+            (this.metrics.errorCount / this.metrics.totalLogs * 100).toFixed(2) : 0;
+        
+        return {
+            ...this.metrics,
+            errorRate: parseFloat(errorRate),
+            successRate: (100 - parseFloat(errorRate)).toFixed(2)
+        };
+    }
 }
 
 // ===========================================================================================
-// RESILIENCE & ERROR HANDLING
+// ระบบ Resilient Executor ขั้นสูง
 // ===========================================================================================
 
-class ResilientExecutor {
-    static async executeWithRetry(fn, context = 'operation', maxRetries = CONFIG.maxRetries) {
-        let lastError;
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const result = await fn();
-                if (attempt > 1) {
-                    Logger.success(`${context} succeeded on attempt ${attempt}`);
-                }
-                return result;
-            } catch (error) {
-                lastError = error;
-                Logger.warn(`${context} failed on attempt ${attempt}/${maxRetries}: ${error.message}`);
-                
-                if (attempt < maxRetries) {
-                    const delay = CONFIG.retryDelay * attempt;
-                    Logger.info(`${UI_TEXT.errors.retrying} ${attempt + 1} in ${delay}ms`);
-                    await this.sleep(delay);
+class AdvancedResilientExecutor {
+    constructor() {
+        this.circuitBreakers = new Map();
+        this.retryStats = new Map();
+    }
+
+    async executeWithRetry(operation, context = 'operation', options = {}) {
+        const {
+            maxRetries = CONFIG.maxRetries,
+            baseDelay = CONFIG.baseRetryDelay,
+            maxDelay = CONFIG.maxRetryDelay,
+            exponentialBackoff = true,
+            circuitBreaker = true
+        } = options;
+
+        let circuitBreakerInstance = null;
+        if (circuitBreaker) {
+            if (!this.circuitBreakers.has(context)) {
+                this.circuitBreakers.set(context, new CircuitBreaker(context));
+            }
+            circuitBreakerInstance = this.circuitBreakers.get(context);
+        }
+
+        const executeOperation = async () => {
+            let lastError;
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const result = circuitBreakerInstance 
+                        ? await circuitBreakerInstance.execute(operation)
+                        : await operation();
+                    
+                    if (attempt > 1) {
+                        Logger.success(`${context} สำเร็จในครั้งที่ ${attempt}`);
+                    }
+                    
+                    this._updateRetryStats(context, attempt, true);
+                    return result;
+                } catch (error) {
+                    lastError = error;
+                    Logger.warn(`${context} ล้มเหลวในครั้งที่ ${attempt}/${maxRetries}: ${error.message}`);
+                    
+                    if (attempt < maxRetries) {
+                        const delay = exponentialBackoff 
+                            ? Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay)
+                            : baseDelay;
+                        
+                        Logger.info(`${THAI_TEXT.errors.retrying} ${attempt + 1} ใน ${delay}ms`);
+                        await this.sleep(delay);
+                    }
                 }
             }
-        }
-        
-        Logger.error(`${context} failed after ${maxRetries} attempts:`, lastError);
-        throw lastError;
+            
+            this._updateRetryStats(context, maxRetries, false);
+            Logger.error(`${context} ล้มเหลวหลังจากลองใหม่ ${maxRetries} ครั้ง:`, lastError);
+            throw lastError;
+        };
+
+        return await this.timeout(executeOperation(), CONFIG.parallel.timeoutMs);
     }
 
-    static sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    static async timeout(promise, ms = CONFIG.connectionTimeout) {
+    async timeout(promise, ms = CONFIG.parallel.timeoutMs) {
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms);
+            setTimeout(() => reject(new Error(`${THAI_TEXT.errors.operationTimeout} ${ms}ms`)), ms);
         });
         
         return Promise.race([promise, timeoutPromise]);
     }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    _updateRetryStats(context, attempts, success) {
+        if (!this.retryStats.has(context)) {
+            this.retryStats.set(context, { 
+                totalAttempts: 0, 
+                successCount: 0, 
+                failureCount: 0,
+                averageAttempts: 0
+            });
+        }
+        
+        const stats = this.retryStats.get(context);
+        stats.totalAttempts += attempts;
+        
+        if (success) {
+            stats.successCount++;
+        } else {
+            stats.failureCount++;
+        }
+        
+        const totalOperations = stats.successCount + stats.failureCount;
+        stats.averageAttempts = stats.totalAttempts / totalOperations;
+    }
+
+    getStats() {
+        const circuitBreakerStats = Array.from(this.circuitBreakers.values()).map(cb => cb.getState());
+        return {
+            circuitBreakers: circuitBreakerStats,
+            retryStats: Object.fromEntries(this.retryStats)
+        };
+    }
 }
 
 // ===========================================================================================
-// CORE BOT FUNCTIONALITY
+// ระบบ Monitoring และ Metrics
 // ===========================================================================================
 
-class GameTracker {
+class PerformanceMonitor {
+    constructor() {
+        this.metrics = {
+            startTime: Date.now(),
+            operations: {
+                total: 0,
+                successful: 0,
+                failed: 0,
+                responseTime: []
+            },
+            memory: {
+                peak: 0,
+                current: 0,
+                samples: []
+            },
+            connections: {
+                active: 0,
+                total: 0
+            }
+        };
+        
+        this.startMonitoring();
+    }
+
+    startMonitoring() {
+        // Monitor memory every 30 seconds
+        setInterval(() => {
+            const usage = process.memoryUsage();
+            this.metrics.memory.current = usage.heapUsed;
+            this.metrics.memory.peak = Math.max(this.metrics.memory.peak, usage.heapUsed);
+            this.metrics.memory.samples.push({
+                timestamp: Date.now(),
+                heapUsed: usage.heapUsed,
+                heapTotal: usage.heapTotal,
+                external: usage.external,
+                rss: usage.rss
+            });
+            
+            // Keep only last 100 samples
+            if (this.metrics.memory.samples.length > 100) {
+                this.metrics.memory.samples.shift();
+            }
+        }, 30000);
+    }
+
+    recordOperation(duration, success = true) {
+        this.metrics.operations.total++;
+        if (success) {
+            this.metrics.operations.successful++;
+        } else {
+            this.metrics.operations.failed++;
+        }
+        
+        this.metrics.operations.responseTime.push(duration);
+        if (this.metrics.operations.responseTime.length > 1000) {
+            this.metrics.operations.responseTime.shift();
+        }
+    }
+
+    getMetrics() {
+        const uptime = Date.now() - this.metrics.startTime;
+        const successRate = this.metrics.operations.total > 0 
+            ? (this.metrics.operations.successful / this.metrics.operations.total * 100)
+            : 100;
+        
+        const avgResponseTime = this.metrics.operations.responseTime.length > 0
+            ? this.metrics.operations.responseTime.reduce((a, b) => a + b, 0) / this.metrics.operations.responseTime.length
+            : 0;
+
+        return {
+            uptime: Math.floor(uptime / 1000), // seconds
+            uptimeHours: (uptime / (1000 * 60 * 60)).toFixed(2),
+            successRate: successRate.toFixed(2),
+            avgResponseTime: avgResponseTime.toFixed(2),
+            operations: this.metrics.operations.total,
+            memoryUsageMB: (this.metrics.memory.current / 1024 / 1024).toFixed(2),
+            peakMemoryMB: (this.metrics.memory.peak / 1024 / 1024).toFixed(2),
+            activeConnections: this.metrics.connections.active
+        };
+    }
+}
+
+// สร้าง instances ของระบบต่างๆ
+const Logger = new AdvancedLogger();
+const ResilientExecutor = new AdvancedResilientExecutor();
+const Monitor = new PerformanceMonitor();
+
+// ===========================================================================================
+// คลาสหลักของ Bot (MAIN BOT CLASS)
+// ===========================================================================================
+
+class ThaiActivityTracker {
     constructor() {
         this.client = new Client({
             intents: [
@@ -557,9 +890,10 @@ class GameTracker {
         });
 
         // Core components
-        this.cache = new PerformanceCache();
-        this.debouncer = new DebounceManager();
-        this.sessionTracker = new GameSessionTracker();
+        this.cache = new MultiLevelCache();
+        this.debouncer = new AdvancedDebounceManager();
+        this.sessionTracker = new ActivitySessionTracker();
+        this.batchProcessor = new BatchProcessor();
         
         // State management
         this.guild = null;
@@ -567,116 +901,139 @@ class GameTracker {
         this.lastMessageId = null;
         this.updateTimer = null;
         this.isReady = false;
+        this.lastUpdateTime = 0;
         
         this._setupEventListeners();
+        Logger.info('Thai Activity Tracker เริ่มต้นแล้ว');
     }
 
     // ===========================================================================================
-    // GAME NAME PROCESSING - ALWAYS KEEP ORIGINAL
-    // ===========================================================================================
-
-    processGameName(gameName) {
-        if (!gameName || typeof gameName !== 'string') {
-            return null;
-        }
-
-        // ALWAYS return the original game name - NO TRANSLATION OR MODIFICATION
-        const trimmedName = gameName.trim();
-        
-        // Log if it's a recognized game (for stats purposes only)
-        if (GAME_DATABASE.has(trimmedName)) {
-            Logger.debug(`Recognized game: ${trimmedName}`);
-        } else {
-            Logger.debug(`Unknown/Custom game detected: ${trimmedName}`);
-        }
-
-        return trimmedName;
-    }
-
-    // ===========================================================================================
-    // USER ACTIVITY ANALYSIS - CHECK EVERYONE
+    // การวิเคราะห์กิจกรรมของผู้ใช้ (USER ACTIVITY ANALYSIS)
     // ===========================================================================================
 
     getUserActivity(member) {
+        const startTime = Date.now();
         try {
-            if (!member?.presence?.activities?.length) return null;
-
-            // Find ANY activity that indicates game playing
-            // DO NOT EXCLUDE ANYTHING - show all activities
-            const gameActivity = member.presence.activities.find(activity => 
-                activity.type === ActivityType.Playing && 
-                activity.name &&
-                activity.name.trim().length > 0
-            );
-
-            if (gameActivity) {
-                return this.processGameName(gameActivity.name);
+            if (!member?.presence?.activities?.length) {
+                Monitor.recordOperation(Date.now() - startTime, true);
+                return null;
             }
 
-            // Also check for other activity types that might indicate gaming
-            const otherActivity = member.presence.activities.find(activity => 
-                (activity.type === ActivityType.Streaming || 
-                 activity.type === ActivityType.Watching ||
-                 activity.type === ActivityType.Competing) &&
-                activity.name &&
+            // หากิจกรรมทั้งหมด
+            const activities = member.presence.activities.filter(activity => 
+                activity.name && 
                 activity.name.trim().length > 0 &&
                 !this._isExcludedActivity(activity.name)
             );
 
-            return otherActivity ? this.processGameName(otherActivity.name) : null;
+            if (activities.length === 0) {
+                Monitor.recordOperation(Date.now() - startTime, true);
+                return null;
+            }
+
+            // เลือกกิจกรรมที่สำคัญที่สุด (เกม > สตรีม > ทั่วไป)
+            const gameActivity = activities.find(a => a.type === ActivityType.Playing);
+            const streamActivity = activities.find(a => a.type === ActivityType.Streaming);
+            const otherActivity = activities.find(a => 
+                a.type === ActivityType.Watching || a.type === ActivityType.Competing
+            );
+
+            let selectedActivity = gameActivity || streamActivity || otherActivity;
+            if (selectedActivity) {
+                const result = {
+                    name: selectedActivity.name.trim(),
+                    type: this._determineActivityType(selectedActivity.name, selectedActivity.type),
+                    discordType: selectedActivity.type
+                };
+                
+                Monitor.recordOperation(Date.now() - startTime, true);
+                return result;
+            }
+
+            Monitor.recordOperation(Date.now() - startTime, true);
+            return null;
         } catch (error) {
-            Logger.debug(`Error getting user activity for ${member?.displayName}: ${error.message}`);
+            Monitor.recordOperation(Date.now() - startTime, false);
+            Logger.debug(`ข้อผิดพลาดในการดึงกิจกรรมของ ${member?.displayName}: ${error.message}`);
             return null;
         }
     }
 
+    _determineActivityType(activityName, discordType) {
+        // เกมที่แท้จริง
+        if (REAL_GAMES.has(activityName) || discordType === ActivityType.Playing) {
+            return 'game';
+        }
+        
+        // แอปสตรีมมิ่ง
+        if (STREAMING_APPS.has(activityName) || discordType === ActivityType.Streaming) {
+            return 'streaming';
+        }
+        
+        // แอปทั่วไป
+        return 'general';
+    }
+
     _isExcludedActivity(activityName) {
-        // Only exclude obvious non-game activities
-        const excluded = ['Spotify', 'YouTube Music', 'Apple Music', 'SoundCloud'];
-        return excluded.some(name => activityName.toLowerCase().includes(name.toLowerCase()));
+        const excluded = ['Custom Status', 'Spotify'];
+        return excluded.some(name => 
+            activityName.toLowerCase().includes(name.toLowerCase())
+        );
     }
 
     // ===========================================================================================
-    // COMPREHENSIVE GAME DATA COLLECTION
+    // การเก็บข้อมูลกิจกรรมแบบขนาน (PARALLEL ACTIVITY DATA COLLECTION)
     // ===========================================================================================
 
-    async collectGameData() {
-        const cacheKey = 'gameData';
+    async collectActivityData() {
+        const startTime = Date.now();
+        const cacheKey = 'activityData';
+        
+        // ตรวจสอบแคช
         const cached = this.cache.get(cacheKey);
-        if (cached) return cached;
+        if (cached) {
+            Monitor.recordOperation(Date.now() - startTime, true);
+            return cached;
+        }
 
         try {
-            if (!this.guild) throw new Error('Guild not available');
+            if (!this.guild) {
+                throw new Error('Guild ไม่พร้อมใช้งาน');
+            }
 
-            const gameData = new Map();
+            const activityData = new Map();
             const monitoredChannels = await this._getMonitoredChannels();
 
-            Logger.debug(`Checking ${monitoredChannels.length} voice channels`);
+            Logger.debug(`กำลังตรวจสอบ ${monitoredChannels.length} ช่องเสียง`);
 
-            // Process each voice channel in parallel
+            // ประมวลผลช่องเสียงแบบขนาน
             const channelPromises = monitoredChannels.map(channel => 
-                this._processVoiceChannel(channel, gameData)
+                this._processVoiceChannelBatch(channel, activityData)
             );
 
             await Promise.allSettled(channelPromises);
 
-            // Convert Map to Object for compatibility
+            // แปลง Map เป็น Object
             const result = Object.fromEntries(
-                Array.from(gameData.entries()).map(([gameName, data]) => [
-                    gameName,
+                Array.from(activityData.entries()).map(([activityName, data]) => [
+                    activityName,
                     {
                         ...data,
                         channels: Array.from(data.channels),
-                        players: CONFIG.showPlayerNames ? Array.from(data.players) : []
+                        users: CONFIG.showPlayerNames ? Array.from(data.users) : []
                     }
                 ])
             );
 
-            this.cache.set(cacheKey, result, 5000); // Short cache for game data
-            Logger.debug(`Collected data for ${Object.keys(result).length} games`);
+            // เก็บไว้ในแคช
+            this.cache.set(cacheKey, result, 'l1');
+            
+            Logger.debug(`เก็บข้อมูลได้ ${Object.keys(result).length} กิจกรรม`);
+            Monitor.recordOperation(Date.now() - startTime, true);
             return result;
         } catch (error) {
-            Logger.error('Error collecting game data:', error);
+            Monitor.recordOperation(Date.now() - startTime, false);
+            Logger.error('ข้อผิดพลาดในการเก็บข้อมูลกิจกรรม:', error);
             return {};
         }
     }
@@ -695,7 +1052,7 @@ class GameTracker {
                 }
                 return [];
             } catch (error) {
-                Logger.warn(`Failed to fetch category ${categoryId}: ${error.message}`);
+                Logger.warn(`ไม่สามารถดึงหมวดหมู่ ${categoryId}: ${error.message}`);
                 return [];
             }
         });
@@ -710,175 +1067,238 @@ class GameTracker {
         return channels;
     }
 
-    async _processVoiceChannel(voiceChannel, gameData) {
+    async _processVoiceChannelBatch(voiceChannel, activityData) {
         try {
             if (!voiceChannel.members?.size) return;
 
-            Logger.debug(`Processing ${voiceChannel.name} with ${voiceChannel.members.size} members`);
+            Logger.trace(`ประมวลผล ${voiceChannel.name} มี ${voiceChannel.members.size} สมาชิก`);
 
-            // Check EVERY member in the voice channel
-            voiceChannel.members.forEach(member => {
-                const gameName = this.getUserActivity(member);
-                
-                // If user has ANY activity, record it
-                if (gameName) {
-                    if (!gameData.has(gameName)) {
-                        gameData.set(gameName, {
-                            playerCount: 0,
-                            channels: new Set(),
-                            players: new Set()
-                        });
-                    }
+            // ประมวลผลสมาชิกทุกคนในช่องเสียง
+            const memberPromises = Array.from(voiceChannel.members.values()).map(member => 
+                this.batchProcessor.add(() => this._processMemberActivity(member, voiceChannel, activityData))
+            );
 
-                    const data = gameData.get(gameName);
-                    data.playerCount++;
-                    data.channels.add(voiceChannel);
-                    
-                    if (CONFIG.showPlayerNames) {
-                        data.players.add({
-                            id: member.id,
-                            displayName: member.displayName,
-                            username: member.user.username
-                        });
-                    }
-
-                    // Track session
-                    this.sessionTracker.startSession(member.id, gameName, voiceChannel.id);
-                }
-            });
+            await Promise.allSettled(memberPromises);
         } catch (error) {
-            Logger.debug(`Error processing voice channel ${voiceChannel.name}: ${error.message}`);
+            Logger.debug(`ข้อผิดพลาดในการประมวลผลช่องเสียง ${voiceChannel.name}: ${error.message}`);
+        }
+    }
+
+    async _processMemberActivity(member, voiceChannel, activityData) {
+        const activity = this.getUserActivity(member);
+        
+        if (activity) {
+            const key = `${activity.name}_${activity.type}`;
+            
+            if (!activityData.has(key)) {
+                activityData.set(key, {
+                    name: activity.name,
+                    type: activity.type,
+                    userCount: 0,
+                    channels: new Set(),
+                    users: new Set()
+                });
+            }
+
+            const data = activityData.get(key);
+            data.userCount++;
+            data.channels.add(voiceChannel);
+            
+            if (CONFIG.showPlayerNames) {
+                data.users.add({
+                    id: member.id,
+                    displayName: member.displayName,
+                    username: member.user.username
+                });
+            }
+
+            // ติดตามเซสชัน
+            this.sessionTracker.startSession(
+                member.id, 
+                activity.name, 
+                activity.type, 
+                voiceChannel.id
+            );
         }
     }
 
     // ===========================================================================================
-    // ADVANCED EMBED CREATION WITH DETAILED STATS
+    // การสร้าง Embed ขั้นสูงพร้อมสถิติโดยละเอียด
     // ===========================================================================================
 
-    async createGameEmbed(gameData) {
+    async createActivityEmbed(activityData) {
+        const startTime = Date.now();
         try {
-            const sortedGames = Object.entries(gameData)
-                .sort(([,a], [,b]) => b.playerCount - a.playerCount)
+            const sortedActivities = Object.entries(activityData)
+                .sort(([,a], [,b]) => b.userCount - a.userCount)
                 .slice(0, 5);
 
             const embed = new EmbedBuilder()
-                .setTitle(UI_TEXT.embed.title)
-                .setDescription(UI_TEXT.embed.description)
+                .setTitle(THAI_TEXT.embed.title)
+                .setDescription(THAI_TEXT.embed.description)
                 .setColor(CONFIG.embedColors.gaming)
                 .setTimestamp()
                 .setFooter({
-                    text: `${UI_TEXT.embed.footer} ${CONFIG.updateInterval} ${UI_TEXT.console.seconds}`,
+                    text: `${THAI_TEXT.embed.footer} ${CONFIG.updateInterval} ${THAI_TEXT.console.seconds}`,
                     iconURL: this.client.user?.displayAvatarURL()
                 });
 
-            if (sortedGames.length === 0) {
+            if (sortedActivities.length === 0) {
                 embed.addFields({
-                    name: UI_TEXT.embed.noGames.title,
-                    value: UI_TEXT.embed.noGames.description,
+                    name: THAI_TEXT.embed.noActivity.title,
+                    value: THAI_TEXT.embed.noActivity.description,
                     inline: false
                 });
             } else {
-                this._addGameFields(embed, sortedGames);
-                this._addDetailedStatistics(embed, gameData);
+                await this._addActivityFields(embed, sortedActivities);
+                await this._addDetailedStatistics(embed, activityData);
+                await this._addPerformanceMetrics(embed);
             }
 
+            Monitor.recordOperation(Date.now() - startTime, true);
             return embed;
         } catch (error) {
-            Logger.error('Error creating embed:', error);
+            Monitor.recordOperation(Date.now() - startTime, false);
+            Logger.error('ข้อผิดพลาดในการสร้าง embed:', error);
             return this._createErrorEmbed();
         }
     }
 
-    _addGameFields(embed, sortedGames) {
+    async _addActivityFields(embed, sortedActivities) {
         const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
         
-        sortedGames.forEach(([gameName, data], index) => {
+        for (let i = 0; i < sortedActivities.length; i++) {
+            const [key, data] = sortedActivities[i];
+            const emoji = this._getActivityEmoji(data.type);
+            const userLabel = this._getUserLabel(data.type);
+            
             const channelLinks = data.channels
                 .map(channel => `<#${channel.id}>`)
                 .join(' • ');
 
             let fieldValue = [
-                `**${UI_TEXT.embed.fields.voiceChannels}:** ${channelLinks}`,
-                `**${UI_TEXT.embed.fields.playerCount}:** ${data.playerCount} ${UI_TEXT.embed.stats.people}`,
-                `**${UI_TEXT.embed.fields.channelCount}:** ${data.channels.length} ${UI_TEXT.embed.fields.channels}`
+                `**${THAI_TEXT.embed.fields.voiceChannels}:** ${channelLinks}`,
+                `**${THAI_TEXT.embed.fields.userCount}:** ${data.userCount} ${THAI_TEXT.embed.stats.people}`,
+                `**${THAI_TEXT.embed.fields.channelCount}:** ${data.channels.length} ${THAI_TEXT.embed.stats.channels}`
             ];
 
-            // Add player names if enabled
-            if (CONFIG.showPlayerNames && data.players && data.players.length > 0) {
-                const playerMentions = data.players
-                    .slice(0, 10) // Limit to prevent embed size issues
-                    .map(player => `<@${player.id}>`)
+            // เพิ่มชื่อผู้ใช้หากเปิดใช้งาน
+            if (CONFIG.showPlayerNames && data.users && data.users.length > 0) {
+                const userMentions = data.users
+                    .slice(0, 8) // จำกัดเพื่อป้องกันปัญหาขนาด embed
+                    .map(user => `<@${user.id}>`)
                     .join(', ');
                 
-                const remainingCount = data.players.length > 10 ? ` (+${data.players.length - 10} more)` : '';
-                fieldValue.push(`**${UI_TEXT.embed.fields.players}:** ${playerMentions}${remainingCount}`);
+                const remainingCount = data.users.length > 8 ? ` (+${data.users.length - 8} คนอื่นๆ)` : '';
+                fieldValue.push(`**${userLabel}:** ${userMentions}${remainingCount}`);
             }
 
-            // Add session time if available
-            const avgTime = this.sessionTracker.getAverageSessionTime(gameName);
+            // เพิ่มเวลาเซสชันเฉลี่ย
+            const avgTime = this.sessionTracker.getAverageSessionTime(data.name);
             if (avgTime > 0) {
-                fieldValue.push(`**Avg Session:** ${avgTime} ${UI_TEXT.embed.stats.minutes}`);
+                fieldValue.push(`**${THAI_TEXT.embed.fields.sessionTime}:** ${avgTime} ${THAI_TEXT.embed.stats.minutes}`);
             }
 
             embed.addFields({
-                name: `${rankEmojis[index]} ${gameName} (${data.playerCount} ${UI_TEXT.embed.stats.people})`,
+                name: `${rankEmojis[i]} ${emoji} ${data.name} (${data.userCount} ${THAI_TEXT.embed.stats.people})`,
                 value: fieldValue.join('\n'),
                 inline: false
             });
-        });
+        }
     }
 
-    _addDetailedStatistics(embed, gameData) {
-        const totalPlayers = Object.values(gameData)
-            .reduce((sum, data) => sum + data.playerCount, 0);
-        const totalGames = Object.keys(gameData).length;
+    async _addDetailedStatistics(embed, activityData) {
+        const totalUsers = Object.values(activityData)
+            .reduce((sum, data) => sum + data.userCount, 0);
+        const totalActivities = Object.keys(activityData).length;
         const activeChannels = new Set();
         
-        Object.values(gameData).forEach(data => {
+        Object.values(activityData).forEach(data => {
             data.channels.forEach(channel => activeChannels.add(channel.id));
         });
 
         const mostPopularToday = this.sessionTracker.getMostPopularToday();
+        const performanceMetrics = this.sessionTracker.getPerformanceMetrics();
         
         const statsValue = [
-            `**${UI_TEXT.embed.stats.totalPlayers}:** ${totalPlayers} ${UI_TEXT.embed.stats.people}`,
-            `**${UI_TEXT.embed.stats.totalGames}:** ${totalGames} ${UI_TEXT.embed.stats.games}`,
-            `**${UI_TEXT.embed.stats.activeChannels}:** ${activeChannels.size} ${UI_TEXT.embed.fields.channels}`
+            `**${THAI_TEXT.embed.stats.totalUsers}:** ${totalUsers} ${THAI_TEXT.embed.stats.people}`,
+            `**${THAI_TEXT.embed.stats.totalActivities}:** ${totalActivities} ${THAI_TEXT.embed.stats.activities}`,
+            `**${THAI_TEXT.embed.stats.activeChannels}:** ${activeChannels.size} ${THAI_TEXT.embed.stats.channels}`
         ];
 
         if (mostPopularToday) {
-            statsValue.push(`**${UI_TEXT.embed.stats.mostPopular}:** ${mostPopularToday}`);
+            const emoji = this._getActivityEmoji(mostPopularToday.type);
+            statsValue.push(`**${THAI_TEXT.embed.stats.mostPopularToday}:** ${emoji} ${mostPopularToday.name}`);
+        }
+
+        if (performanceMetrics.averageSessionLengthMinutes > 0) {
+            statsValue.push(`**${THAI_TEXT.embed.stats.avgDuration}:** ${performanceMetrics.averageSessionLengthMinutes} ${THAI_TEXT.embed.stats.minutes}`);
         }
 
         embed.addFields({
-            name: UI_TEXT.embed.stats.title,
+            name: THAI_TEXT.embed.stats.title,
             value: statsValue.join('\n'),
             inline: false
         });
     }
 
+    async _addPerformanceMetrics(embed) {
+        const cacheStats = this.cache.getStats();
+        const monitorStats = Monitor.getMetrics();
+        const logStats = Logger.getMetrics();
+        
+        const perfValue = [
+            `**${THAI_TEXT.embed.stats.cacheHitRate}:** ${cacheStats.hitRate}%`,
+            `**${THAI_TEXT.embed.stats.successRate}:** ${monitorStats.successRate}%`,
+            `**${THAI_TEXT.embed.stats.uptime}:** ${monitorStats.uptimeHours} ${THAI_TEXT.embed.stats.hours}`
+        ];
+
+        embed.addFields({
+            name: `⚡ ${THAI_TEXT.embed.stats.performance}`,
+            value: perfValue.join('\n'),
+            inline: true
+        });
+    }
+
+    _getActivityEmoji(type) {
+        switch (type) {
+            case 'game': return THAI_TEXT.embed.emojis.game;
+            case 'streaming': return THAI_TEXT.embed.emojis.streaming;
+            default: return THAI_TEXT.embed.emojis.general;
+        }
+    }
+
+    _getUserLabel(type) {
+        switch (type) {
+            case 'game': return THAI_TEXT.embed.fields.players;
+            case 'streaming': return THAI_TEXT.embed.fields.viewers;
+            default: return THAI_TEXT.embed.fields.users;
+        }
+    }
+
     _createErrorEmbed() {
         return new EmbedBuilder()
-            .setTitle('❌ Error occurred')
-            .setDescription('Could not load game data at this time')
+            .setTitle('❌ เกิดข้อผิดพลาด')
+            .setDescription('ไม่สามารถโหลดข้อมูลกิจกรรมได้ในขณะนี้')
             .setColor(CONFIG.embedColors.error)
             .setTimestamp();
     }
 
     // ===========================================================================================
-    // MESSAGE UPDATE SYSTEM
+    // ระบบอัปเดตข้อความ
     // ===========================================================================================
 
-    async updateGameTracker() {
+    async updateActivityTracker() {
         return ResilientExecutor.executeWithRetry(async () => {
             if (!this.outputChannel) {
-                throw new Error(UI_TEXT.console.noOutputChannel);
+                throw new Error(THAI_TEXT.console.noOutputChannel);
             }
 
-            Logger.info(UI_TEXT.console.updating);
+            Logger.info(THAI_TEXT.console.updating);
+            const updateStart = Date.now();
 
-            const gameData = await this.collectGameData();
-            const embed = await this.createGameEmbed(gameData);
+            const activityData = await this.collectActivityData();
+            const embed = await this.createActivityEmbed(activityData);
 
             if (this.lastMessageId) {
                 try {
@@ -886,22 +1306,31 @@ class GameTracker {
                         this.outputChannel.messages.fetch(this.lastMessageId)
                     );
                     await lastMessage.edit({ embeds: [embed] });
-                    Logger.success(UI_TEXT.console.updated);
+                    Logger.success(THAI_TEXT.console.updated);
                 } catch (error) {
-                    Logger.warn(UI_TEXT.console.editFailed);
+                    Logger.warn(THAI_TEXT.console.editFailed);
                     const newMessage = await this.outputChannel.send({ embeds: [embed] });
                     this.lastMessageId = newMessage.id;
                 }
             } else {
                 const newMessage = await this.outputChannel.send({ embeds: [embed] });
                 this.lastMessageId = newMessage.id;
-                Logger.success(UI_TEXT.console.newMessage);
+                Logger.success(THAI_TEXT.console.newMessage);
             }
-        }, 'Game tracker update');
+
+            this.lastUpdateTime = Date.now();
+            const updateDuration = this.lastUpdateTime - updateStart;
+            Logger.trace(`การอัปเดตใช้เวลา ${updateDuration}ms`);
+            
+        }, 'Activity tracker update', {
+            maxRetries: 3,
+            exponentialBackoff: true,
+            circuitBreaker: true
+        });
     }
 
     // ===========================================================================================
-    // AUTO-UPDATE SYSTEM
+    // ระบบอัปเดตอัตโนมัติ
     // ===========================================================================================
 
     startAutoUpdate() {
@@ -909,19 +1338,23 @@ class GameTracker {
             clearInterval(this.updateTimer);
         }
 
-        // Immediate first update
-        this.updateGameTracker().catch(error => {
-            Logger.error('Initial update failed:', error);
-        });
-
-        // Setup automatic updates
-        this.updateTimer = setInterval(() => {
-            this.updateGameTracker().catch(error => {
-                Logger.error('Scheduled update failed:', error);
+        // อัปเดตครั้งแรกทันที
+        this.debouncer.debounce('initial-update', () => {
+            this.updateActivityTracker().catch(error => {
+                Logger.error('การอัปเดตครั้งแรกล้มเหลว:', error);
             });
+        }, 1000, true);
+
+        // ตั้งการอัปเดตอัตโนมัติ
+        this.updateTimer = setInterval(() => {
+            this.debouncer.throttle('scheduled-update', () => {
+                this.updateActivityTracker().catch(error => {
+                    Logger.error('การอัปเดตตามกำหนดล้มเหลว:', error);
+                });
+            }, CONFIG.updateInterval * 1000);
         }, CONFIG.updateInterval * 1000);
 
-        Logger.success(`${UI_TEXT.console.autoUpdate} ${CONFIG.updateInterval} ${UI_TEXT.console.seconds}`);
+        Logger.success(`${THAI_TEXT.console.autoUpdate} ${CONFIG.updateInterval} ${THAI_TEXT.console.seconds}`);
     }
 
     stopAutoUpdate() {
@@ -933,7 +1366,7 @@ class GameTracker {
     }
 
     // ===========================================================================================
-    // EVENT HANDLERS
+    // Event Handlers
     // ===========================================================================================
 
     _setupEventListeners() {
@@ -942,17 +1375,19 @@ class GameTracker {
         this.client.on('presenceUpdate', (oldPresence, newPresence) => this._handlePresenceUpdate(oldPresence, newPresence));
         this.client.on('error', error => Logger.error('Client error:', error));
         this.client.on('warn', warning => Logger.warn('Client warning:', warning));
+        this.client.on('disconnect', () => Logger.warn('Client disconnected'));
+        this.client.on('reconnecting', () => Logger.info('Client reconnecting...'));
     }
 
     async _handleReady() {
-        Logger.success(`🚀 ${this.client.user.tag} ${UI_TEXT.console.ready}`);
+        Logger.success(`🚀 ${this.client.user.tag} ${THAI_TEXT.console.ready}`);
 
         try {
             await this._initializeBot();
             this.isReady = true;
             this.startAutoUpdate();
         } catch (error) {
-            Logger.error(UI_TEXT.errors.initFailed, error);
+            Logger.error(THAI_TEXT.errors.initFailed, error);
             this.isReady = false;
         }
     }
@@ -966,13 +1401,13 @@ class GameTracker {
             this.guild.channels.fetch(CONFIG.outputChannelId)
         );
 
-        if (!this.guild) throw new Error(UI_TEXT.console.noGuild);
-        if (!this.outputChannel) throw new Error(UI_TEXT.console.noChannel);
+        if (!this.guild) throw new Error(THAI_TEXT.console.noGuild);
+        if (!this.outputChannel) throw new Error(THAI_TEXT.console.noChannel);
 
-        Logger.info(`📋 ${UI_TEXT.console.connecting}: ${this.guild.name}`);
-        Logger.info(`📝 ${UI_TEXT.console.outputChannel}: ${this.outputChannel.name}`);
-        Logger.info(`👁️ ${UI_TEXT.console.monitoring}: ${CONFIG.monitoredCategoryIds.length} ${UI_TEXT.console.categories}`);
-        Logger.info(`👤 Player names display: ${CONFIG.showPlayerNames ? 'Enabled' : 'Disabled'}`);
+        Logger.info(`📋 ${THAI_TEXT.console.connecting}: ${this.guild.name}`);
+        Logger.info(`📝 ${THAI_TEXT.console.outputChannel}: ${this.outputChannel.name}`);
+        Logger.info(`👁️ ${THAI_TEXT.console.monitoring}: ${CONFIG.monitoredCategoryIds.length} ${THAI_TEXT.console.categories}`);
+        Logger.info(`👤 ${CONFIG.showPlayerNames ? THAI_TEXT.console.playerNamesEnabled : THAI_TEXT.console.playerNamesDisabled}`);
     }
 
     _handleVoiceStateUpdate(oldState, newState) {
@@ -982,9 +1417,15 @@ class GameTracker {
         const isNewChannelMonitored = newState.channel && this._isChannelMonitored(newState.channel);
 
         if (isOldChannelMonitored || isNewChannelMonitored) {
-            Logger.debug(`${UI_TEXT.console.voiceChange}: ${newState.member?.displayName}`);
-            this.cache.clear(); // Clear cache to ensure fresh data
-            this.debouncer.debounce('voiceUpdate', () => this.updateGameTracker(), 2000);
+            Logger.debug(`${THAI_TEXT.console.voiceChange}: ${newState.member?.displayName}`);
+            
+            // ล้างแคชเพื่อให้ข้อมูลใหม่
+            this.cache.clear();
+            
+            // อัปเดตแบบ debounce
+            this.debouncer.debounce('voice-update', () => {
+                this.updateActivityTracker();
+            }, CONFIG.debounce.voiceUpdate);
         }
     }
 
@@ -993,9 +1434,15 @@ class GameTracker {
 
         const voiceState = newPresence.member.voice;
         if (voiceState.channel && this._isChannelMonitored(voiceState.channel)) {
-            Logger.debug(`${UI_TEXT.console.gameChange}: ${newPresence.member.displayName}`);
-            this.cache.clear(); // Clear cache to ensure fresh data
-            this.debouncer.debounce('presenceUpdate', () => this.updateGameTracker(), 1000);
+            Logger.debug(`${THAI_TEXT.console.activityChange}: ${newPresence.member.displayName}`);
+            
+            // ล้างแคชเพื่อให้ข้อมูลใหม่
+            this.cache.clear();
+            
+            // อัปเดตแบบ debounce
+            this.debouncer.debounce('presence-update', () => {
+                this.updateActivityTracker();
+            }, CONFIG.debounce.presenceUpdate);
         }
     }
 
@@ -1005,73 +1452,95 @@ class GameTracker {
     }
 
     // ===========================================================================================
-    // BOT LIFECYCLE MANAGEMENT
+    // การจัดการวงชีวิตของ Bot
     // ===========================================================================================
 
     async start() {
         try {
+            Logger.info('กำลังเริ่มต้น Thai Activity Tracker...');
             await this.client.login(CONFIG.token);
         } catch (error) {
-            Logger.error('Failed to start bot:', error);
+            Logger.error('ไม่สามารถเริ่มต้น bot:', error);
             throw error;
         }
     }
 
     async stop() {
-        Logger.info(`\n🛑 ${UI_TEXT.console.stopping}`);
+        Logger.info(`\n🛑 ${THAI_TEXT.console.stopping}`);
         
         this.stopAutoUpdate();
-        this.cache.clear();
+        this.cache.destroy();
+        this.debouncer.clear();
         
         if (this.client) {
             this.client.destroy();
         }
+        
+        Logger.info('Thai Activity Tracker หยุดทำงานแล้ว');
     }
 
     // ===========================================================================================
-    // PERFORMANCE MONITORING
+    // การติดตามประสิทธิภาพ
     // ===========================================================================================
 
     getPerformanceStats() {
         return {
+            bot: {
+                isReady: this.isReady,
+                lastUpdateTime: this.lastUpdateTime,
+                uptime: Date.now() - this.sessionTracker.performanceMetrics.startTime || 0
+            },
             cache: this.cache.getStats(),
-            memory: process.memoryUsage(),
-            uptime: process.uptime(),
-            isReady: this.isReady,
-            gameDatabase: GAME_DATABASE.size
+            monitor: Monitor.getMetrics(),
+            logger: Logger.getMetrics(),
+            resilience: ResilientExecutor.getStats(),
+            session: this.sessionTracker.getPerformanceMetrics(),
+            database: {
+                realGames: REAL_GAMES.size,
+                streamingApps: STREAMING_APPS.size,
+                generalApps: GENERAL_APPS.size
+            }
         };
     }
 }
 
 // ===========================================================================================
-// INITIALIZATION & PROCESS MANAGEMENT
+// การเริ่มต้นและการจัดการ Process
 // ===========================================================================================
 
-const bot = new GameTracker();
+const bot = new ThaiActivityTracker();
 
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
+    Logger.info('ได้รับสัญญาณ SIGINT...');
     await bot.stop();
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
+    Logger.info('ได้รับสัญญาณ SIGTERM...');
     await bot.stop();
     process.exit(0);
 });
 
 // Error handlers
 process.on('unhandledRejection', (error) => {
-    Logger.error(`${UI_TEXT.errors.unhandledRejection}:`, error);
+    Logger.error(`${THAI_TEXT.errors.unhandledRejection}:`, error);
 });
 
 process.on('uncaughtException', (error) => {
-    Logger.error(`${UI_TEXT.errors.uncaughtException}:`, error);
+    Logger.error(`${THAI_TEXT.errors.uncaughtException}:`, error);
     process.exit(1);
 });
 
-// Start the bot
+// Memory monitoring
+process.on('warning', (warning) => {
+    Logger.warn('Process warning:', warning);
+});
+
+// เริ่มต้น bot
+Logger.info('กำลังเริ่มต้น Thai Activity Tracker Bot...');
 bot.start().catch(error => {
-    Logger.error(UI_TEXT.errors.connectionFailed, error);
+    Logger.error(THAI_TEXT.errors.connectionFailed, error);
     process.exit(1);
 });
