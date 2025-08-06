@@ -1,0 +1,20 @@
+{
+  "name": "thai-voice-game-tracker-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot der Voice Channels überwacht und Top 5 Spiele auf Thailändisch anzeigt",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["discord", "bot", "voice", "games", "thai"],
+  "author": "Discord Bot Developer",
+  "license": "MIT"
+}
